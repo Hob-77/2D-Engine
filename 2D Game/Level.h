@@ -18,8 +18,16 @@ public:
 		TILE_SPIKE = 2,
 	};
 
+	// Need to add way to Load my BMP files, we are going to Super Mario style so Map Design is going to be nothing crazy
+
 	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
 	{
+		// Sets all pointers to nullptr
+		for (int i = 0; i < 256; i++)
+		{
+			tileTextures[i] = nullptr;
+		}
+
 		Tiles.Clear(); // Tiles are now empty
 
 		// Fill the bottom row with 1's for floor
