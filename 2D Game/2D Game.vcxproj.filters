@@ -21,6 +21,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="SDL3.dll" />
+    <None Include="SDL3_image.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.h">
@@ -32,5 +33,10 @@
     <ClInclude Include="Level.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Assets\floor.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

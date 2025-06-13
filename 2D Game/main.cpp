@@ -4,6 +4,7 @@
 #include "Level.h"
 #include "Array.h"
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 
 int main(int argc, char* argv[])
 {
@@ -12,6 +13,12 @@ int main(int argc, char* argv[])
 		std::cerr << "Failed to init SDL: " << SDL_GetError() << "\n";
 		return -1;
 	}
+
+	if (!IMG_Init(IMG_INIT_PNG))
+	{
+
+	}
+
 
 	SDL_Window* window = SDL_CreateWindow(
 		"2D Platformer",
