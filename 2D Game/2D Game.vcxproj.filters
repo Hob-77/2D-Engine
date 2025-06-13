@@ -35,7 +35,25 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\floor.png">
+    <Image Include="Assets\grass_floor.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\spike_down.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\spike_left.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\spike_right.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\spike_up.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\dirt_floor.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\brick_floor.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

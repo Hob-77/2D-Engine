@@ -145,7 +145,13 @@
     <ClInclude Include="Player.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\floor.png" />
+    <Image Include="Assets\brick_floor.png" />
+    <Image Include="Assets\dirt_floor.png" />
+    <Image Include="Assets\grass_floor.png" />
+    <Image Include="Assets\spike_down.png" />
+    <Image Include="Assets\spike_left.png" />
+    <Image Include="Assets\spike_right.png" />
+    <Image Include="Assets\spike_up.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

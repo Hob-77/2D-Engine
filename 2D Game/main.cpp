@@ -8,17 +8,12 @@
 
 int main(int argc, char* argv[])
 {
+
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
 		std::cerr << "Failed to init SDL: " << SDL_GetError() << "\n";
 		return -1;
 	}
-
-	if (!IMG_Init(IMG_INIT_PNG))
-	{
-
-	}
-
 
 	SDL_Window* window = SDL_CreateWindow(
 		"2D Platformer",
@@ -43,11 +38,18 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+
+	// Make level for testing
+	Level level1(20, 12);
+	level1.LoadTextures(renderer);
+
 	bool quit = false;
 	SDL_Event event;
 
 	while (!quit)
 	{
+
 		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_EVENT_QUIT)
@@ -61,8 +63,10 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+		SDL_SetRenderDrawColor(renderer, 135, 206, 250, 255);
 		SDL_RenderClear(renderer);
+
+		level1.Render(renderer);
 
 		SDL_RenderPresent(renderer);
 
@@ -73,4 +77,5 @@ int main(int argc, char* argv[])
 	SDL_Quit();
 
 	return 0;
+
 }
