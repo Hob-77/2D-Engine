@@ -5,15 +5,17 @@
 
 class Level
 {
+private:
+
+	// Temporary need to change to 16x16 Tiles first for testing
+	static constexpr float cameraY = 8.0f;
+
 public:
 
-	static constexpr uint8_t TILE_SIZE = 32;
+	static constexpr uint8_t TILE_SIZE = 16;
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
-
-	// Temporary need to change to 16x16 Tiles first
-	static constexpr float cameraY = 8.0f;
 
 	enum TileType : uint8_t
 	{
@@ -68,7 +70,7 @@ public:
 
 				SDL_FRect tileRect;
 				tileRect.x = (float)(x * TILE_SIZE);
-				tileRect.y = (float)(y * TILE_SIZE) - cameraY;
+				tileRect.y = (float)(y * TILE_SIZE); // - cameraY for offset
 				tileRect.w = (float)TILE_SIZE;
 				tileRect.h = (float)TILE_SIZE;
 

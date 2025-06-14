@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
 
 	// Make level for testing
-	Level level1(20, 12);
+	Level level1(40, 23);
 	level1.LoadTextures(renderer);
 
 	bool quit = false;
