@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	SDL_SetHint("SDL_RENDER_SCALE_QUALITY", "0");
+
 	SDL_Window* window = SDL_CreateWindow(
 		"2D Platformer",
 		1920,

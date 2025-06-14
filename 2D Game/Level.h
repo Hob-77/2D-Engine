@@ -36,6 +36,10 @@ public:
 		if (surface)
 		{
 			tileTextures[type] = SDL_CreateTextureFromSurface(renderer, surface);
+
+			// Crispy pixels
+			SDL_SetTextureScaleMode(tileTextures[type], SDL_SCALEMODE_NEAREST);
+
 			SDL_DestroySurface(surface);
 		}
 	}
@@ -70,7 +74,7 @@ public:
 
 				SDL_FRect tileRect;
 				tileRect.x = (float)(x * TILE_SIZE);
-				tileRect.y = (float)(y * TILE_SIZE); // - cameraY for offset
+				tileRect.y = (float)(y * TILE_SIZE) - cameraY;
 				tileRect.w = (float)TILE_SIZE;
 				tileRect.h = (float)TILE_SIZE;
 
