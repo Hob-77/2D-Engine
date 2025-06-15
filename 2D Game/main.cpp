@@ -5,6 +5,9 @@
 #include "Array.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl3.h"
+#include "imgui/imgui_impl_sdlrenderer3.h"
 
 int main(int argc, char* argv[])
 {
@@ -40,7 +43,15 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+	// Need to comment out for imgui, DO NOT FORGET TO UNDO THIS AFTER ALL THE LEVEL EDITOR STUFF!!!!!
+	/*SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);*/
+
+	// imgui testing
+	ImGui::CreateContext();
+	ImGui::StyleColorsDark();
+	ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+	ImGui_ImplSDLRenderer3_Init(renderer);
+
 
 	// Make level for testing
 	Level level1(40, 23);
@@ -51,9 +62,10 @@ int main(int argc, char* argv[])
 
 	while (!quit)
 	{
-
 		while (SDL_PollEvent(&event))
 		{
+			ImGui_ImplSDL3_ProcessEvent(&event);
+
 			if (event.type == SDL_EVENT_QUIT)
 			{
 				quit = true;
@@ -100,10 +112,18 @@ int main(int argc, char* argv[])
 			}
 		}
 
+		ImGui_ImplSDLRenderer3_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+
 		SDL_SetRenderDrawColor(renderer, 135, 206, 250, 255);
 		SDL_RenderClear(renderer);
 
 		level1.Render(renderer);
+
+		ImGui::ShowDemoWindow();
+		ImGui::Render();
+		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 
 		SDL_RenderPresent(renderer);
 
