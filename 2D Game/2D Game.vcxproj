@@ -136,6 +136,13 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\brick_floor.aseprite" />
+    <None Include="Assets\dirt_floor.aseprite" />
+    <None Include="Assets\grass_floor.aseprite" />
+    <None Include="Assets\spike_down.aseprite" />
+    <None Include="Assets\spike_left.aseprite" />
+    <None Include="Assets\spike_right.aseprite" />
+    <None Include="Assets\spike_up.aseprite" />
     <None Include="SDL3.dll" />
     <None Include="SDL3_image.dll" />
   </ItemGroup>

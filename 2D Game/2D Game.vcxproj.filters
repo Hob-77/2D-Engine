@@ -22,6 +22,13 @@
   <ItemGroup>
     <None Include="SDL3.dll" />
     <None Include="SDL3_image.dll" />
+    <None Include="Assets\brick_floor.aseprite" />
+    <None Include="Assets\dirt_floor.aseprite" />
+    <None Include="Assets\grass_floor.aseprite" />
+    <None Include="Assets\spike_down.aseprite" />
+    <None Include="Assets\spike_left.aseprite" />
+    <None Include="Assets\spike_right.aseprite" />
+    <None Include="Assets\spike_up.aseprite" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.h">
@@ -35,9 +42,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Assets\grass_floor.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="Assets\spike_down.png">
       <Filter>Resource Files</Filter>
     </Image>
@@ -50,10 +54,13 @@
     <Image Include="Assets\spike_up.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Assets\brick_floor.png">
+      <Filter>Resource Files</Filter>
+    </Image>
     <Image Include="Assets\dirt_floor.png">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="Assets\brick_floor.png">
+    <Image Include="Assets\grass_floor.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>

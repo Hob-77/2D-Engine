@@ -19,11 +19,16 @@ public:
 
 	enum TileType : uint8_t
 	{
+		// Empty
 		TILE_AIR = 0,
+
+		// Spikes (common)
 		TILE_SPIKE_UP = 1,
 		TILE_SPIKE_DOWN = 2,
 		TILE_SPIKE_LEFT = 3,
 		TILE_SPIKE_RIGHT = 4,
+
+		// Solid floors
 		TILE_GRASS_FLOOR = 5,
 		TILE_DIRT_FLOOR = 6,
 		TILE_BRICK_FLOOR = 7,
@@ -33,15 +38,23 @@ public:
 	void LoadTexture(SDL_Renderer* renderer, const char* path, TileType type)
 	{
 		SDL_Surface* surface = IMG_Load(path);
-		if (surface)
-		{
-			tileTextures[type] = SDL_CreateTextureFromSurface(renderer, surface);
 
+		if (!surface) {
+			SDL_Log("Failed to load %s: %s", path, SDL_GetError());
+			return;
+		}
+
+		tileTextures[type] = SDL_CreateTextureFromSurface(renderer, surface);
+
+		if (!tileTextures[type]) {
+			SDL_Log("Failed to create texture from %s", path, SDL_GetError());
+		}
+		else {
 			// Crispy pixels
 			SDL_SetTextureScaleMode(tileTextures[type], SDL_SCALEMODE_NEAREST);
-
-			SDL_DestroySurface(surface);
 		}
+
+		SDL_DestroySurface(surface);
 	}
 
 	// Load and attach each texture to the enum above
@@ -97,12 +110,35 @@ public:
 		// Tiles are now empty
 		Tiles.Clear();
 
-		// Fill the bottom row with 1's for floor
+		// Fill the bottom row with enum(numbers) for floor testing
 		for (int x = 0; x < MAPWIDTH; x++)
 		{
 			Tiles.Get(x, MAPHEIGHT - 1) = TILE_GRASS_FLOOR;
 		}
 
+		for (int x = 0; x < MAPWIDTH; x++)
+		{
+			Tiles.Get(x, MAPHEIGHT - 3) = TILE_SPIKE_DOWN;
+		}
+
+		for (int x = 0; x < MAPWIDTH; x++)
+		{
+			Tiles.Get(x, MAPHEIGHT - 4) = TILE_BRICK_FLOOR;
+		}
+
 	}
+
+	// Free's Gpu memory after the level is done since the textures are stored in the Gpu
+	~Level()
+	{
+		for (int i = 0; i < 256; i++)
+		{
+			if (tileTextures[i] != nullptr)
+			{
+				SDL_DestroyTexture(tileTextures[i]);
+				tileTextures[i] = nullptr;
+			}
+		}
+	};
 
 };
