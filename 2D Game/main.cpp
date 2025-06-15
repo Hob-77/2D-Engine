@@ -59,9 +59,44 @@ int main(int argc, char* argv[])
 				quit = true;
 			}
 
-			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)
+			if (event.type == SDL_EVENT_KEY_DOWN)
 			{
-				quit = true;
+				// Escape to quit
+				if (event.key.key == SDLK_ESCAPE)
+				{
+					quit = true;
+				}
+
+				// Check for Ctrl key modifier
+				if (event.key.mod & SDL_KMOD_CTRL)
+				{
+					// Ctrl+S to save
+					if (event.key.key == SDLK_S)
+					{
+						if (level1.SaveToFile("test_level.lvl"))
+						{
+							SDL_Log("Level saved successfully!");
+						}
+						else
+						{
+							SDL_Log("Failed to save level!");
+						}
+					}
+					// Ctrl+L to load
+					else if (event.key.key == SDLK_L)
+					{
+						if (level1.LoadFromFile("test_level.lvl"))
+						{
+							SDL_Log("Level loaded successfully!");
+							// Reload textures if needed (they're cleared on load)
+							level1.LoadTextures(renderer);
+						}
+						else
+						{
+							SDL_Log("Failed to load level!");
+						}
+					}
+				}
 			}
 		}
 

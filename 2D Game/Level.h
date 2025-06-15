@@ -139,6 +139,96 @@ public:
 				tileTextures[i] = nullptr;
 			}
 		}
-	};
+	}
+
+	bool SaveToFile(const char* filename)
+	{
+		SDL_IOStream* file = SDL_IOFromFile(filename, "wb");
+		if (!file)
+		{
+			SDL_Log("Failed to open %s for saving", filename);
+			return false;
+		}
+
+		SDL_WriteU16BE(file, MAPWIDTH);
+		SDL_WriteU16BE(file, MAPHEIGHT);
+
+		for (int y = 0; y < MAPHEIGHT; y++)
+		{
+			for (int x = 0; x < MAPWIDTH; x++)
+			{
+				SDL_WriteU8(file, Tiles.Get(x, y));
+			}
+		}
+
+		SDL_CloseIO(file);
+		SDL_Log("Level saved: %s (%dx%d)", filename, MAPWIDTH, MAPHEIGHT);
+		return true;
+	}
+
+	bool LoadFromFile(const char* filename)
+	{
+		SDL_IOStream* file = SDL_IOFromFile(filename, "rb");
+		if (!file)
+		{
+			SDL_Log("Failed to open %s for loading", filename);
+			return false;
+		}
+
+		uint16_t width, height;
+		size_t bytesRead;
+
+		bytesRead = SDL_ReadIO(file, &width, sizeof(uint16_t));
+		if (bytesRead != sizeof(uint16_t))
+		{
+			SDL_Log("Failed to read width from %s", filename);
+			SDL_CloseIO(file);
+			return false;
+		}
+		width = SDL_Swap16BE(width);
+
+		bytesRead = SDL_ReadIO(file, &height, sizeof(uint16_t));
+		if (bytesRead != sizeof(uint16_t))
+		{
+			SDL_Log("Failed to read height from %s", filename);
+			SDL_CloseIO(file);
+			return false;
+		}
+		height = SDL_Swap16BE(height);
+
+		if (width == 0 || height == 0 || width > 1000 || height > 1000)
+		{
+			SDL_Log("Invalid level size: %dx%d", width, height);
+			SDL_CloseIO(file);
+			return false;
+		}
+
+		if (width != MAPWIDTH || height != MAPHEIGHT)
+		{
+			MAPWIDTH = width;
+			MAPHEIGHT = height;
+			Tiles = Array2D<uint8_t>(width, height);
+		}
+
+		for (int y = 0; y < MAPHEIGHT; y++)
+		{
+			for (int x = 0; x < MAPWIDTH; x++)
+			{
+				uint8_t tile;
+				bytesRead = SDL_ReadIO(file, &tile, 1);
+				if (bytesRead != 1)
+				{
+					SDL_Log("Failed to read tile at %d,%d", x, y);
+					SDL_CloseIO(file);
+					return false;
+				}
+				Tiles.Get(x, y) = tile;
+			}
+		}
+
+		SDL_CloseIO(file);
+		SDL_Log("Level loaded: %s (%dx%d)", filename, MAPWIDTH, MAPHEIGHT);
+		return true;
+	}
 
 };
