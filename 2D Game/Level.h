@@ -87,7 +87,7 @@ public:
 
 				SDL_FRect tileRect;
 				tileRect.x = (float)(x * TILE_SIZE);
-				tileRect.y = (float)(y * TILE_SIZE) - cameraY;
+				tileRect.y = (float)(y * TILE_SIZE);
 				tileRect.w = (float)TILE_SIZE;
 				tileRect.h = (float)TILE_SIZE;
 

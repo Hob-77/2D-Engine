@@ -2,6 +2,7 @@
 
 #include "Player.h"
 #include "Level.h"
+#include "LevelEditor.h"
 #include "Array.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
@@ -57,6 +58,10 @@ int main(int argc, char* argv[])
 	Level level1(40, 23);
 	level1.LoadTextures(renderer);
 
+	LevelEditor editor;
+	editor.level = &level1;
+	editor.renderer = renderer;
+
 	bool quit = false;
 	SDL_Event event;
 
@@ -65,6 +70,7 @@ int main(int argc, char* argv[])
 		while (SDL_PollEvent(&event))
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
+			editor.HandleInput(event);
 
 			if (event.type == SDL_EVENT_QUIT)
 			{
@@ -78,37 +84,6 @@ int main(int argc, char* argv[])
 				{
 					quit = true;
 				}
-
-				// Check for Ctrl key modifier
-				if (event.key.mod & SDL_KMOD_CTRL)
-				{
-					// Ctrl+S to save
-					if (event.key.key == SDLK_S)
-					{
-						if (level1.SaveToFile("test_level.lvl"))
-						{
-							SDL_Log("Level saved successfully!");
-						}
-						else
-						{
-							SDL_Log("Failed to save level!");
-						}
-					}
-					// Ctrl+L to load
-					else if (event.key.key == SDLK_L)
-					{
-						if (level1.LoadFromFile("test_level.lvl"))
-						{
-							SDL_Log("Level loaded successfully!");
-							// Reload textures if needed (they're cleared on load)
-							level1.LoadTextures(renderer);
-						}
-						else
-						{
-							SDL_Log("Failed to load level!");
-						}
-					}
-				}
 			}
 		}
 
@@ -116,12 +91,14 @@ int main(int argc, char* argv[])
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 
+		editor.DrawUI();
+
 		SDL_SetRenderDrawColor(renderer, 135, 206, 250, 255);
 		SDL_RenderClear(renderer);
 
 		level1.Render(renderer);
+		editor.DrawGrid();
 
-		ImGui::ShowDemoWindow();
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 

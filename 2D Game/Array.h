@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 
 template<class Datatype>
 class Array

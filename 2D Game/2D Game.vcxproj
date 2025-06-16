@@ -140,6 +140,7 @@
     <ClCompile Include="imgui\imgui_impl_sdlrenderer3.cpp" />
     <ClCompile Include="imgui\imgui_tables.cpp" />
     <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="LevelEditor.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +165,7 @@
     <ClInclude Include="imgui\imstb_textedit.h" />
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Level.h" />
+    <ClInclude Include="LevelEditor.h" />
     <ClInclude Include="Player.h" />
   </ItemGroup>
   <ItemGroup>
