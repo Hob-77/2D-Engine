@@ -1,15 +1,46 @@
 #include "LevelEditor.h"
 #include "imgui/imgui.h"
 
+// Level Editor imgui input
 void LevelEditor::HandleInput(SDL_Event& event)
 {
-	// Mouse clicking for tile placement
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Track mouse position
+	if (event.type == SDL_EVENT_MOUSE_MOTION)
+	{
+		if (!io.WantCaptureMouse)
+		{
+			float mouseX, mouseY;
+			SDL_GetMouseState(&mouseX, &mouseY);
+
+			currentTileX = (int)(mouseX / Level::TILE_SIZE);
+			currentTileY = (int)(mouseY / Level::TILE_SIZE);
+
+			// Place tile while dragging
+			if (isDrawing)
+			{
+				// Only place if we moved to a new tile
+				if (currentTileX != lastPlacedX || currentTileY != lastPlacedY)
+				{
+					PlaceTile(currentTileX, currentTileY);
+					lastPlacedX = currentTileX;
+					lastPlacedY = currentTileY;
+				}
+			}
+		}
+	}
+
+
+
+	// Left click place tile, hold left click drag to place quickly
 	if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
 	{
 		// Check to see if mouse click
-		ImGuiIO& io = ImGui::GetIO();
 		if (!io.WantCaptureMouse)
 		{
+			isDrawing = true;
+
 			float mouseX, mouseY;
 			SDL_GetMouseState(&mouseX, &mouseY);
 
@@ -17,8 +48,19 @@ void LevelEditor::HandleInput(SDL_Event& event)
 			int tileY = (int)(mouseY / Level::TILE_SIZE);
 
 			PlaceTile(tileX, tileY);
+			lastPlacedX = tileX;
+			lastPlacedY = tileY;
 		}
 	}
+
+	// Check to stop left click hold drawing
+	if (event.type == SDL_EVENT_MOUSE_BUTTON_UP && event.button.button == SDL_BUTTON_LEFT)
+	{
+		isDrawing = false;
+		lastPlacedX = -1;
+		lastPlacedY = -1;
+	}
+
 }
 
 void LevelEditor::DrawUI()
@@ -102,6 +144,16 @@ void LevelEditor::DrawUI()
 
 }
 
+void LevelEditor::Draw()
+{
+	DrawGrid();
+
+	if (currentTileX >= 0 && currentTileX < level->MAPWIDTH && currentTileY >= 0 && currentTileY < level->MAPHEIGHT)
+	{
+		PlaceTilePreview(currentTileX, currentTileY);
+	}
+}
+
 void LevelEditor::DrawGrid()
 {
 	if (!showGrid) return;
@@ -120,9 +172,30 @@ void LevelEditor::DrawGrid()
 	}
 }
 
-void LevelEditor::DrawTilePreview(int x, int y)
+void LevelEditor::PlaceTilePreview(int x, int y)
 {
-	// Need to figure this out, how do I add do
+	if (selectedTile == Level::TILE_AIR)
+	{
+		return;
+	}
+
+	SDL_Texture* texture = level->GetTileTexture(selectedTile);
+
+	if (texture)
+	{
+		SDL_SetTextureAlphaMod(texture, 128);
+
+		SDL_FRect Rect =
+		{
+			(float)(x * Level::TILE_SIZE),
+			(float)(y * Level::TILE_SIZE),
+			(float)Level::TILE_SIZE,
+			(float)Level::TILE_SIZE
+		};
+
+		SDL_RenderTexture(renderer, texture, nullptr, &Rect);
+		SDL_SetTextureAlphaMod(texture, 255);
+	}
 }
 
 void LevelEditor::PlaceTile(int x, int y)

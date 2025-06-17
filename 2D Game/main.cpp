@@ -45,7 +45,9 @@ int main(int argc, char* argv[])
 	}
 
 	// Need to comment out for imgui, DO NOT FORGET TO UNDO THIS AFTER ALL THE LEVEL EDITOR STUFF!!!!!
-	/*SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);*/
+	/*
+	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
+	*/
 
 	// imgui testing
 	ImGui::CreateContext();
@@ -97,7 +99,7 @@ int main(int argc, char* argv[])
 		SDL_RenderClear(renderer);
 
 		level1.Render(renderer);
-		editor.DrawGrid();
+		editor.Draw();
 
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);

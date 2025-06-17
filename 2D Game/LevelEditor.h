@@ -3,6 +3,12 @@
 
 class LevelEditor
 {
+private:
+	bool isDrawing = false;
+	int lastPlacedX = -1;
+	int lastPlacedY = -1;
+	int currentTileX = 0;
+	int currentTileY = 0;
 public:
 	Level* level; // Points to the level we are editing
 	SDL_Renderer* renderer; // We need for drawing grid/overlays, not for the Level itself
@@ -13,10 +19,11 @@ public:
 
 	// Editor functions
 	void HandleInput(SDL_Event& event);
+	void Draw();
 	void DrawUI();
 	void DrawGrid();
-	void DrawTilePreview(int x, int y);
 	void PlaceTile(int x, int y);
+	void PlaceTilePreview(int x, int y);
 	void SaveLevel();
 	void LoadLevel();
 	void CreateNewLevel(int width, int height);

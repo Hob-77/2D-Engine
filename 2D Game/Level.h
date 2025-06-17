@@ -7,11 +7,7 @@ class Level
 {
 private:
 
-	// Temporary need to change to 16x16 Tiles first for testing
-	static constexpr float cameraY = 8.0f;
-
 public:
-
 	static constexpr uint8_t TILE_SIZE = 16;
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
@@ -34,22 +30,31 @@ public:
 		TILE_BRICK_FLOOR = 7,
 	};
 
+	// Needed for imgui place tile preview 
+	SDL_Texture* GetTileTexture(uint8_t tileType)
+	{
+		return tileTextures[tileType];
+	}
+
 	// Used in LoadTextures function to help us load our 256 Tiles
 	void LoadTexture(SDL_Renderer* renderer, const char* path, TileType type)
 	{
 		SDL_Surface* surface = IMG_Load(path);
 
-		if (!surface) {
+		if (!surface) 
+		{
 			SDL_Log("Failed to load %s: %s", path, SDL_GetError());
 			return;
 		}
 
 		tileTextures[type] = SDL_CreateTextureFromSurface(renderer, surface);
 
-		if (!tileTextures[type]) {
-			SDL_Log("Failed to create texture from %s", path, SDL_GetError());
+		if (!tileTextures[type]) 
+		{
+			SDL_Log("Failed to create texture from %s: %s", path, SDL_GetError());
 		}
-		else {
+		else 
+		{
 			// Crispy pixels
 			SDL_SetTextureScaleMode(tileTextures[type], SDL_SCALEMODE_NEAREST);
 		}
