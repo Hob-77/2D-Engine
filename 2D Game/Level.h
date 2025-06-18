@@ -9,6 +9,9 @@ private:
 
 public:
 	static constexpr uint8_t TILE_SIZE = 16;
+	static constexpr uint16_t MAX_WIDTH = 1000;
+	static constexpr uint16_t MAX_HEIGHT = 1000;
+
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
@@ -201,9 +204,9 @@ public:
 		}
 		height = SDL_Swap16BE(height);
 
-		if (width == 0 || height == 0 || width > 1000 || height > 1000)
+		if (width == 0 || height == 0 || width > MAX_WIDTH || height > MAX_HEIGHT)
 		{
-			SDL_Log("Invalid level size: %dx%d", width, height);
+			SDL_Log("Invalid level size: %dx%d (max: %dx%d)", width, height, MAX_WIDTH, MAX_HEIGHT);
 			SDL_CloseIO(file);
 			return false;
 		}

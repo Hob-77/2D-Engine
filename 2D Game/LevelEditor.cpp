@@ -235,12 +235,16 @@ void LevelEditor::LoadLevel()
 
 void LevelEditor::CreateNewLevel(int width, int height)
 {
-	if (width > 0 && height > 0 && width <= 1000 && height <= 1000)
+	if (width > 0 && height > 0 && width <= Level::MAX_WIDTH && height <= Level::MAX_HEIGHT)
 	{
 		level->MAPWIDTH = width;
 		level->MAPHEIGHT = height;
 		level->Tiles = Array2D<uint8_t>(width, height);
-
+	}
+	else
+	{
+		SDL_Log("Invalid level size! Must be between 1x1 and %dx%d", Level::MAX_WIDTH, Level::MAX_HEIGHT);
+	}
 		// Initialize all tiles to AIR
 		for (int y = 0; y < height; y++)
 		{
@@ -251,5 +255,4 @@ void LevelEditor::CreateNewLevel(int width, int height)
 		}
 
 		SDL_Log("Created new level: %dx%d", width, height);
-	}
 }
