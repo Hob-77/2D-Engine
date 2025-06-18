@@ -75,6 +75,9 @@ int main(int argc, char* argv[])
 			ImGui_ImplSDL3_ProcessEvent(&event);
 			editor.HandleInput(event);
 
+			// Update for movement of screen in editor
+			editor.Update();
+
 			if (event.type == SDL_EVENT_QUIT)
 			{
 				quit = true;
@@ -110,9 +113,6 @@ int main(int argc, char* argv[])
 		SDL_RenderPresent(renderer);
 
 	}
-
-	// Update for movement of screen in editor
-	editor.Update();
 
 	ImGui_ImplSDLRenderer3_Shutdown();
 	ImGui_ImplSDL3_Shutdown();
