@@ -10,6 +10,9 @@
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_sdlrenderer3.h"
 
+int windowWidth = 1920;
+int windowHeight = 1080;
+
 int main(int argc, char* argv[])
 {
 
@@ -23,8 +26,8 @@ int main(int argc, char* argv[])
 
 	SDL_Window* window = SDL_CreateWindow(
 		"2D Platformer",
-		1920,
-		1080,
+		windowWidth,
+		windowHeight,
 		SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
 	);
 
@@ -60,9 +63,7 @@ int main(int argc, char* argv[])
 	Level level1(40, 23);
 	level1.LoadTextures(renderer);
 
-	LevelEditor editor;
-	editor.level = &level1;
-	editor.renderer = renderer;
+	LevelEditor editor(renderer, &level1, windowWidth, windowHeight);
 
 	bool quit = false;
 	SDL_Event event;
@@ -95,10 +96,12 @@ int main(int argc, char* argv[])
 
 		editor.DrawUI();
 
-		SDL_SetRenderDrawColor(renderer, 135, 206, 250, 255);
+		SDL_SetRenderDrawColor(renderer, 100, 149, 237, 255);
 		SDL_RenderClear(renderer);
 
-		level1.Render(renderer);
+		editor.RenderWithCamera();
+
+		// Grid and Tile preview
 		editor.Draw();
 
 		ImGui::Render();
@@ -108,7 +111,13 @@ int main(int argc, char* argv[])
 
 	}
 
-	level1.~Level();
+	// Update for movement of screen in editor
+	editor.Update();
+
+	ImGui_ImplSDLRenderer3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImGui::DestroyContext();
+
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

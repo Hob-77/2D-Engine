@@ -14,8 +14,11 @@ void LevelEditor::HandleInput(SDL_Event& event)
 			float mouseX, mouseY;
 			SDL_GetMouseState(&mouseX, &mouseY);
 
-			currentTileX = (int)(mouseX / Level::TILE_SIZE);
-			currentTileY = (int)(mouseY / Level::TILE_SIZE);
+			float worldX, worldY;
+			ScreenToWorld(mouseX, mouseY, worldX, worldY);
+
+			currentTileX = (int)(worldX / Level::TILE_SIZE);
+			currentTileY = (int)(worldY / Level::TILE_SIZE);
 
 			// Place tile while dragging
 			if (isDrawing)
@@ -32,7 +35,6 @@ void LevelEditor::HandleInput(SDL_Event& event)
 	}
 
 
-
 	// Left click place tile, hold left click drag to place quickly
 	if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT)
 	{
@@ -44,14 +46,18 @@ void LevelEditor::HandleInput(SDL_Event& event)
 			float mouseX, mouseY;
 			SDL_GetMouseState(&mouseX, &mouseY);
 
-			int tileX = (int)(mouseX / Level::TILE_SIZE);
-			int tileY = (int)(mouseY / Level::TILE_SIZE);
+			float worldX, worldY;
+			ScreenToWorld(mouseX, mouseY, worldX, worldY);
+
+			int tileX = (int)(worldX / Level::TILE_SIZE);
+			int tileY = (int)(worldY / Level::TILE_SIZE);
 
 			PlaceTile(tileX, tileY);
 			lastPlacedX = tileX;
 			lastPlacedY = tileY;
 		}
 	}
+
 
 	// Check to stop left click hold drawing
 	if (event.type == SDL_EVENT_MOUSE_BUTTON_UP && event.button.button == SDL_BUTTON_LEFT)
@@ -128,8 +134,8 @@ void LevelEditor::DrawUI()
 
 	// New Level creation
 	ImGui::Text("Create New Level:");
-	static int newWidth = 40;
-	static int newHeight = 23;
+	static int newWidth = Level::MIN_WIDTH;
+	static int newHeight = Level::MIN_HEIGHT;
 	ImGui::InputInt("Width", &newWidth);
 	ImGui::InputInt("Height", &newHeight);
 	if (ImGui::Button("Create New"))
@@ -158,17 +164,44 @@ void LevelEditor::DrawGrid()
 {
 	if (!showGrid) return;
 
-	// Draw vertical lines
 	SDL_SetRenderDrawColor(renderer, 255, 255, 255, 64); // White with transparency
-	for (int x = 0; x <= level->MAPWIDTH; x++)
+
+	// Calculate visible grid range (same as RenderWithCamera)
+	int startX = (int)(cameraX / Level::TILE_SIZE) - 1;
+	int startY = (int)(cameraY / Level::TILE_SIZE) - 1;
+	int endX = startX + (int)(windowWidth / (Level::TILE_SIZE * cameraZoom)) + 3;
+	int endY = startY + (int)(windowHeight / (Level::TILE_SIZE * cameraZoom)) + 3;
+
+	// Clamp to grid bounds (0 to Level size + 1 for border)
+	startX = SDL_max(0, startX);
+	startY = SDL_max(0, startY);
+	endX = SDL_min(level->MAPWIDTH, endX);
+	endY = SDL_min(level->MAPHEIGHT, endY);
+
+	// Draw vertical lines
+	for (int x = startX; x <= endX && x <= level->MAPWIDTH; x++)
 	{
-		SDL_RenderLine(renderer, (float)(x * Level::TILE_SIZE), 0.0f, (float)(x * Level::TILE_SIZE), (float)(level->MAPHEIGHT * Level::TILE_SIZE));
+		float screenX = (x * Level::TILE_SIZE - cameraX) * cameraZoom;
+		SDL_RenderLine(
+			renderer,
+			screenX,
+			SDL_max(0.0f, (startY * Level::TILE_SIZE - cameraY) * cameraZoom),
+			screenX,
+			SDL_min((float)windowHeight, (endY * Level::TILE_SIZE - cameraY) * cameraZoom)
+		);
 	}
 
 	// Draw horizontal lines
-	for (int y = 0; y <= level->MAPHEIGHT; y++)
+	for (int y = startY; y <= endY && y <= level->MAPHEIGHT; y++)
 	{
-		SDL_RenderLine(renderer, 0.0f, (float)(y * Level::TILE_SIZE), (float)(level->MAPWIDTH * Level::TILE_SIZE), (float)(y * Level::TILE_SIZE));
+		float screenY = (y * Level::TILE_SIZE - cameraY) * cameraZoom;
+		SDL_RenderLine(
+			renderer,
+			SDL_max(0.0f, (startX * Level::TILE_SIZE - cameraX) * cameraZoom),
+			screenY,
+			SDL_min((float)windowWidth, (endX * Level::TILE_SIZE - cameraX) * cameraZoom),
+			screenY
+		);
 	}
 }
 
@@ -185,15 +218,15 @@ void LevelEditor::PlaceTilePreview(int x, int y)
 	{
 		SDL_SetTextureAlphaMod(texture, 128);
 
-		SDL_FRect Rect =
-		{
-			(float)(x * Level::TILE_SIZE),
-			(float)(y * Level::TILE_SIZE),
-			(float)Level::TILE_SIZE,
-			(float)Level::TILE_SIZE
-		};
+		// Transform to camera
+		SDL_FRect screenRect;
+		screenRect.x = (x * Level::TILE_SIZE - cameraX) * cameraZoom;
+		screenRect.y = (y * Level::TILE_SIZE - cameraY) * cameraZoom;
+		screenRect.w = Level::TILE_SIZE * cameraZoom;
+		screenRect.h = Level::TILE_SIZE * cameraZoom;
 
-		SDL_RenderTexture(renderer, texture, nullptr, &Rect);
+
+		SDL_RenderTexture(renderer, texture, nullptr, &screenRect);
 		SDL_SetTextureAlphaMod(texture, 255);
 	}
 }
@@ -231,21 +264,20 @@ void LevelEditor::LoadLevel()
 	{
 		SDL_Log("Failed to load level!");
 	}
+
+	RecenterCamera();
 }
 
 void LevelEditor::CreateNewLevel(int width, int height)
 {
-	if (width > 0 && height > 0 && width <= Level::MAX_WIDTH && height <= Level::MAX_HEIGHT)
+	// Check selected level size before creating level
+	if (width >= Level::MIN_WIDTH && height >= Level::MIN_HEIGHT && width <= Level::MAX_WIDTH && height <= Level::MAX_HEIGHT)
 	{
 		level->MAPWIDTH = width;
 		level->MAPHEIGHT = height;
 		level->Tiles = Array2D<uint8_t>(width, height);
-	}
-	else
-	{
-		SDL_Log("Invalid level size! Must be between 1x1 and %dx%d", Level::MAX_WIDTH, Level::MAX_HEIGHT);
-	}
-		// Initialize all tiles to AIR
+
+		// Set all Tiles to Air = 0
 		for (int y = 0; y < height; y++)
 		{
 			for (int x = 0; x < width; x++)
@@ -253,6 +285,131 @@ void LevelEditor::CreateNewLevel(int width, int height)
 				level->Tiles.Get(x, y) = Level::TILE_AIR;
 			}
 		}
-
 		SDL_Log("Created new level: %dx%d", width, height);
+	}
+	else
+	{
+		SDL_Log("Invalid level size! Must be between %dx%d and %dx%d", Level::MIN_WIDTH, Level::MIN_HEIGHT, Level::MAX_WIDTH, Level::MAX_HEIGHT);
+	}
+
+	RecenterCamera();
+}
+
+void LevelEditor::RecenterCamera()
+{
+	// Center camera
+	cameraX = (level->MAPWIDTH * Level::TILE_SIZE) / 2.0f - (windowWidth / 2.0f);
+	cameraY = (level->MAPHEIGHT * Level::TILE_SIZE) / 2.0f - (windowHeight / 2.0f);
+}
+
+void LevelEditor::ScreenToWorld(float screenX, float screenY, float& worldX, float& worldY)
+{
+	worldX = (screenX / cameraZoom) + cameraX;
+	worldY = (screenY / cameraZoom) + cameraY;
+}
+
+void LevelEditor::UpdateCamera(float deltaTime)
+{
+	const bool* keys = SDL_GetKeyboardState(NULL);
+	float moveSpeed = 300.0f * deltaTime; // 300 pixels a second
+
+	// Keyboard movement (wasd)
+	if (keys[SDL_SCANCODE_W]) 
+	{
+		cameraY -= moveSpeed;
+	}
+	if (keys[SDL_SCANCODE_S])
+	{
+		cameraY += moveSpeed;
+	}
+	if (keys[SDL_SCANCODE_A])
+	{
+		cameraX -= moveSpeed;
+	}
+	if (keys[SDL_SCANCODE_D])
+	{
+		cameraX += moveSpeed;
+	}
+
+	// Edge scrolling
+	float mouseX, mouseY;
+	SDL_GetMouseState(&mouseX, &mouseY);
+
+	if (mouseX < EDGE_SCROLL_MARGIN)
+	{
+		cameraX -= EDGE_SCROLL_SPEED * deltaTime;
+	}
+	if (mouseX > windowWidth - EDGE_SCROLL_MARGIN)
+	{
+		cameraX += EDGE_SCROLL_SPEED * deltaTime;
+	}
+	if (mouseY < EDGE_SCROLL_MARGIN)
+	{
+		cameraY -= EDGE_SCROLL_SPEED * deltaTime;
+	}
+	if (mouseY > windowHeight - EDGE_SCROLL_MARGIN)
+	{
+		cameraY += EDGE_SCROLL_SPEED * deltaTime;
+	}
+
+	// Camera bounds (25 tiles beyond level edges
+	float boundBuffer = 25 * Level::TILE_SIZE;
+	float minX = -boundBuffer;
+	float minY = -boundBuffer;
+	float maxX = (level->MAPWIDTH * Level::TILE_SIZE) - windowWidth + boundBuffer;
+	float maxY = (level->MAPHEIGHT * Level::TILE_SIZE) - windowHeight + boundBuffer;
+
+	// Clamp camera position
+	cameraX = SDL_clamp(cameraX, minX, maxX);
+	cameraY = SDL_clamp(cameraY, minY, maxY);
+}
+
+void LevelEditor::Update()
+{
+	// Calculate deltaTime
+	Uint64 currentTime = SDL_GetTicks();
+	deltaTime = (currentTime - lastFrameTime) / 1000.0f;
+	lastFrameTime = currentTime;
+
+	// Update camera with the calculated deltaTime
+	UpdateCamera(deltaTime);
+}
+
+void LevelEditor::RenderWithCamera()
+{
+	// Visible tile range with 1 tile buffer for smooth scrolling
+	int startX = (int)(cameraX / Level::TILE_SIZE) - 1;
+	int startY = (int)(cameraY / Level::TILE_SIZE) - 1;
+	int endX = startX + (int)(windowWidth / (Level::TILE_SIZE * cameraZoom)) + 3;
+	int endY = startY + (int)(windowHeight / (Level::TILE_SIZE * cameraZoom)) + 3;
+
+	// Clamp to Level bounds
+	startX = SDL_max(0, startX);
+	startY = SDL_max(0, startY);
+	endX = SDL_min(level->MAPWIDTH, endX);
+	endY = SDL_min(level->MAPHEIGHT, endY);
+
+	// Only render visible tiles
+	for (int y = startY; y < endY; y++)
+	{
+		for (int x = startX; x < endX; x++)
+		{
+			uint8_t tileType = level->Tiles.Get(x, y);
+
+			if (tileType == Level::TILE_AIR || level->tileTextures[tileType] == nullptr)
+			{
+				continue;
+			}
+
+			// Calculate screen position with camera transform
+			SDL_FRect screenRect;
+			screenRect.x = (x * Level::TILE_SIZE - cameraX) * cameraZoom;
+			screenRect.y = (y * Level::TILE_SIZE - cameraY) * cameraZoom;
+			screenRect.w = Level::TILE_SIZE * cameraZoom;
+			screenRect.h = Level::TILE_SIZE * cameraZoom;
+
+			SDL_RenderTexture(renderer, level->tileTextures[tileType], nullptr, &screenRect);
+
+		}
+	}
 }

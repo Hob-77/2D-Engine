@@ -8,10 +8,14 @@ class Level
 private:
 
 public:
+	// Level constraints
 	static constexpr uint8_t TILE_SIZE = 16;
+	static constexpr uint16_t MIN_WIDTH = 40;
+	static constexpr uint16_t MIN_HEIGHT = 23;
 	static constexpr uint16_t MAX_WIDTH = 1000;
 	static constexpr uint16_t MAX_HEIGHT = 1000;
 
+	// Actual Level 
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
@@ -204,9 +208,9 @@ public:
 		}
 		height = SDL_Swap16BE(height);
 
-		if (width == 0 || height == 0 || width > MAX_WIDTH || height > MAX_HEIGHT)
+		if (width< MIN_WIDTH|| height < MIN_HEIGHT || width > MAX_WIDTH || height > MAX_HEIGHT)
 		{
-			SDL_Log("Invalid level size: %dx%d (max: %dx%d)", width, height, MAX_WIDTH, MAX_HEIGHT);
+			SDL_Log("Invalid level size: %dx%d (must be between %dx%d and %dx%d)", width, height, MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 			SDL_CloseIO(file);
 			return false;
 		}
