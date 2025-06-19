@@ -6,6 +6,23 @@ void LevelEditor::HandleInput(SDL_Event& event)
 {
 	ImGuiIO& io = ImGui::GetIO();
 
+	// Mouse wheel zoom
+	if (event.type == SDL_EVENT_MOUSE_WHEEL)
+	{
+		float zoomDelta = event.wheel.y * 0.1f;
+		float mouseX, mouseY;
+		SDL_GetMouseState(&mouseX, &mouseY);
+
+		float worldX, worldY;
+		ScreenToWorld(mouseX, mouseY, worldX, worldY);
+
+		cameraZoom += zoomDelta;
+		cameraZoom = SDL_clamp(cameraZoom, MIN_ZOOM, MAX_ZOOM);
+
+		cameraX = worldX - (mouseX / cameraZoom);
+		cameraY = worldY - (mouseY / cameraZoom);
+	}
+
 	// Track mouse position
 	if (event.type == SDL_EVENT_MOUSE_MOTION)
 	{
@@ -311,7 +328,7 @@ void LevelEditor::ScreenToWorld(float screenX, float screenY, float& worldX, flo
 void LevelEditor::UpdateCamera(float deltaTime)
 {
 	const bool* keys = SDL_GetKeyboardState(NULL);
-	float moveSpeed = 300.0f * deltaTime; // 300 pixels a second
+	float moveSpeed = 300.0f * deltaTime / cameraZoom; // Movement scaled with zoom
 
 	// Keyboard movement (wasd)
 	if (keys[SDL_SCANCODE_W]) 
@@ -337,31 +354,55 @@ void LevelEditor::UpdateCamera(float deltaTime)
 
 	if (mouseX < EDGE_SCROLL_MARGIN)
 	{
-		cameraX -= EDGE_SCROLL_SPEED * deltaTime;
+		cameraX -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
 	}
 	if (mouseX > windowWidth - EDGE_SCROLL_MARGIN)
 	{
-		cameraX += EDGE_SCROLL_SPEED * deltaTime;
+		cameraX += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
 	}
 	if (mouseY < EDGE_SCROLL_MARGIN)
 	{
-		cameraY -= EDGE_SCROLL_SPEED * deltaTime;
+		cameraY -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
 	}
 	if (mouseY > windowHeight - EDGE_SCROLL_MARGIN)
 	{
-		cameraY += EDGE_SCROLL_SPEED * deltaTime;
+		cameraY += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
 	}
 
 	// Camera bounds (25 tiles beyond level edges
 	float boundBuffer = 25 * Level::TILE_SIZE;
-	float minX = -boundBuffer;
-	float minY = -boundBuffer;
-	float maxX = (level->MAPWIDTH * Level::TILE_SIZE) - windowWidth + boundBuffer;
-	float maxY = (level->MAPHEIGHT * Level::TILE_SIZE) - windowHeight + boundBuffer;
+	float levelWidth = level->MAPWIDTH * Level::TILE_SIZE;
+	float levelHeight = level->MAPHEIGHT * Level::TILE_SIZE;
 
-	// Clamp camera position
-	cameraX = SDL_clamp(cameraX, minX, maxX);
-	cameraY = SDL_clamp(cameraY, minY, maxY);
+	// Calculate visible area based on zoom
+	float visibleWidth = windowWidth / cameraZoom;
+	float visibleHeight = windowHeight / cameraZoom;
+
+	// Check if Level fits within window
+	if (levelWidth + 2 * boundBuffer <= visibleWidth)
+	{
+		// Level fits horizontally - center it
+		cameraX = (levelWidth - visibleWidth) / 2.0f;
+	}
+	else
+	{
+		// Level does not fit - allow scrolling
+		float minX = -boundBuffer;
+		float maxX = levelWidth - visibleWidth + boundBuffer;
+		cameraX = SDL_clamp(cameraX, minX, maxX);
+	}
+
+	if (levelHeight + 2 * boundBuffer <= visibleHeight)
+	{
+		// Level fits vertically - center it
+		cameraY = (levelHeight - visibleHeight) / 2.0f;
+	}
+	else
+	{
+		float minY = -boundBuffer;
+		float maxY = levelHeight - visibleHeight + boundBuffer;
+		cameraY = SDL_clamp(cameraY, minY, maxY);
+	}
 }
 
 void LevelEditor::Update()
