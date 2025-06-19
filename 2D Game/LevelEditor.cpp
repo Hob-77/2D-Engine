@@ -282,6 +282,7 @@ void LevelEditor::LoadLevel()
 		SDL_Log("Failed to load level!");
 	}
 
+	ResetZoom();
 	RecenterCamera();
 }
 
@@ -292,16 +293,13 @@ void LevelEditor::CreateNewLevel(int width, int height)
 	{
 		level->MAPWIDTH = width;
 		level->MAPHEIGHT = height;
-		level->Tiles = Array2D<uint8_t>(width, height);
 
-		// Set all Tiles to Air = 0
-		for (int y = 0; y < height; y++)
-		{
-			for (int x = 0; x < width; x++)
-			{
-				level->Tiles.Get(x, y) = Level::TILE_AIR;
-			}
-		}
+		// Resize the current level (We dont have to reload textures this way)
+		level->Tiles.Resize(width, height);
+
+		// Clear all tiles to Air = 0
+		level->Tiles.Clear(Level::TILE_AIR);
+
 		SDL_Log("Created new level: %dx%d", width, height);
 	}
 	else
@@ -309,14 +307,20 @@ void LevelEditor::CreateNewLevel(int width, int height)
 		SDL_Log("Invalid level size! Must be between %dx%d and %dx%d", Level::MIN_WIDTH, Level::MIN_HEIGHT, Level::MAX_WIDTH, Level::MAX_HEIGHT);
 	}
 
+	ResetZoom();
 	RecenterCamera();
 }
 
 void LevelEditor::RecenterCamera()
 {
 	// Center camera
-	cameraX = (level->MAPWIDTH * Level::TILE_SIZE) / 2.0f - (windowWidth / 2.0f);
-	cameraY = (level->MAPHEIGHT * Level::TILE_SIZE) / 2.0f - (windowHeight / 2.0f);
+	cameraX = (level->MAPWIDTH * Level::TILE_SIZE) / 2.0f - (windowWidth / 2.0f / cameraZoom);
+	cameraY = (level->MAPHEIGHT * Level::TILE_SIZE) / 2.0f - (windowHeight / 2.0f / cameraZoom);
+}
+
+void LevelEditor::ResetZoom()
+{
+	cameraZoom = DEFAULT_ZOOM;
 }
 
 void LevelEditor::ScreenToWorld(float screenX, float screenY, float& worldX, float& worldY)

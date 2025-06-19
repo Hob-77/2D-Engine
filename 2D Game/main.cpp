@@ -60,10 +60,7 @@ int main(int argc, char* argv[])
 
 
 	// Make level for testing
-	Level level1(40, 23);
-	level1.LoadTextures(renderer);
-
-	LevelEditor editor(renderer, &level1, windowWidth, windowHeight);
+	LevelEditor editor(renderer, windowWidth, windowHeight);
 
 	bool quit = false;
 	SDL_Event event;

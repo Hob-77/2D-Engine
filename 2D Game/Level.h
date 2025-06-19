@@ -120,23 +120,7 @@ public:
 		}
 
 		// Tiles are now empty
-		Tiles.Clear();
-
-		// Fill the bottom row with enum(numbers) for floor testing
-		for (int x = 0; x < MAPWIDTH; x++)
-		{
-			Tiles.Get(x, MAPHEIGHT - 1) = TILE_GRASS_FLOOR;
-		}
-
-		for (int x = 0; x < MAPWIDTH; x++)
-		{
-			Tiles.Get(x, MAPHEIGHT - 3) = TILE_SPIKE_DOWN;
-		}
-
-		for (int x = 0; x < MAPWIDTH; x++)
-		{
-			Tiles.Get(x, MAPHEIGHT - 4) = TILE_BRICK_FLOOR;
-		}
+		Tiles.Clear(TILE_AIR);
 
 	}
 

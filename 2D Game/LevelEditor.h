@@ -4,6 +4,9 @@
 class LevelEditor
 {
 private:
+	// Default level
+	Level* level;
+
 	// For drawing and placing tiles
 	bool isDrawing = false;
 	int lastPlacedX = -1;
@@ -23,33 +26,41 @@ private:
 	static constexpr float EDGE_SCROLL_MARGIN = 50.0f;
 	static constexpr float EDGE_SCROLL_SPEED = 400.0f;
 	static constexpr float MIN_ZOOM = 0.25f;
+	static constexpr float DEFAULT_ZOOM = 1.0f;
 	static constexpr float MAX_ZOOM = 4.0f;
 
-public:
 	// Editor camera
 	float cameraX, cameraY;
 	float cameraZoom;
 
-	Level* level; // Points to the level we are editing
+public:
 	SDL_Renderer* renderer; // We need for drawing grid/overlays, not for the Level itself
 
 	int selectedTile = Level::TILE_AIR; // Default placeable tile (nothing)
 	bool showGrid = true; // Grid of all the 16x16 tiles (on by default)
 	char saveFilename[256] = "level.1v1"; // Default name for save textbox
 
-	// constructor
-	LevelEditor(SDL_Renderer* r, Level* lvl, int windowW, int windowH) : renderer(r), level(lvl), windowWidth(windowW), windowHeight(windowH)
+	// Constructor
+	LevelEditor(SDL_Renderer* r, int windowW, int windowH) : renderer(r), windowWidth(windowW), windowHeight(windowH)
 	{
-		// Initialize camera
-		cameraZoom = 1.0f;
 
-		// Center camera on the level
-		cameraX = (level->MAPWIDTH * Level::TILE_SIZE) / 2.0f - (windowWidth / 2.0f);
-		cameraY = (level->MAPHEIGHT * Level::TILE_SIZE) / 2.0f - (windowHeight / 2.0f);
+		// Default Level
+		level = new Level(Level::MIN_WIDTH, Level::MIN_HEIGHT);
+		level->LoadTextures(renderer);
+
+		// Initialize camera
+		ResetZoom();
+		RecenterCamera();
 
 		lastFrameTime = SDL_GetTicks();
 		deltaTime = 0.0f;
 
+	}
+
+	// Destructor
+	~LevelEditor()
+	{
+		delete level;
 	}
 
 	// Editor functions
@@ -65,6 +76,7 @@ public:
 
 	// Camera functions
 	void RecenterCamera();
+	void ResetZoom();
 	void ScreenToWorld(float screenX, float screenY, float& worldX, float& worldY);
 	void RenderWithCamera();
 	void UpdateCamera(float deltaTime);

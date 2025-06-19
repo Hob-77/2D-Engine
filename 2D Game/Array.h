@@ -137,6 +137,12 @@ public:
 		m_array = new Datatype[p_width * p_height];
 		m_width = p_width;
 		m_height = p_height;
+
+		// Initialize all elements to zero
+		for (int i = 0; i < p_width * p_height; i++)
+		{
+			m_array[i] = 0;
+		}
 	}
 
 	~Array2D()
