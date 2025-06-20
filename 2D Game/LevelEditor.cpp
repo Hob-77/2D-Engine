@@ -197,10 +197,30 @@ void LevelEditor::Draw()
 {
 	DrawGrid();
 
+	DrawLevelBoundary();
+
 	if (currentTileX >= 0 && currentTileX < level->MAPWIDTH && currentTileY >= 0 && currentTileY < level->MAPHEIGHT)
 	{
 		PlaceTilePreview(currentTileX, currentTileY);
 	}
+}
+
+void LevelEditor::DrawLevelBoundary()
+{
+	// Red boundary line
+	SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
+	// Calculate screen coordinates of level bounds
+	float left = (0 - cameraX) * cameraZoom;
+	float top = (0 - cameraY) * cameraZoom;
+	float right = (level->MAPWIDTH * Level::TILE_SIZE - cameraX) * cameraZoom;
+	float bottom = (level->MAPHEIGHT * Level::TILE_SIZE - cameraY) * cameraZoom;
+
+	// Draw rectangle
+	SDL_RenderLine(renderer, left, top, right, top);
+	SDL_RenderLine(renderer, right, top, right, bottom);
+	SDL_RenderLine(renderer, right, bottom, left, bottom);
+	SDL_RenderLine(renderer, left, bottom, left, top);
 }
 
 void LevelEditor::DrawGrid()
@@ -356,6 +376,13 @@ void LevelEditor::ScreenToWorld(float screenX, float screenY, float& worldX, flo
 
 void LevelEditor::UpdateCamera(float deltaTime)
 {
+	
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.WantCaptureKeyboard || io.WantCaptureMouse)
+	{
+		return;
+	}
+
 	const bool* keys = SDL_GetKeyboardState(NULL);
 	float moveSpeed = 300.0f * deltaTime / cameraZoom; // Movement scaled with zoom
 
@@ -464,6 +491,7 @@ void LevelEditor::RenderWithCamera()
 	{
 		for (int x = startX; x < endX; x++)
 		{
+
 			uint8_t tileType = level->Tiles.Get(x, y);
 
 			if (tileType == Level::TILE_AIR || level->tileTextures[tileType] == nullptr)

@@ -62,11 +62,18 @@ int main(int argc, char* argv[])
 	// Make level for testing
 	LevelEditor editor(renderer, windowWidth, windowHeight);
 
+	// fps
+	const int TARGET_FPS = 60;
+	const int FRAME_DELAY = 1000 / TARGET_FPS;
+
 	bool quit = false;
 	SDL_Event event;
 
 	while (!quit)
 	{
+		// fps
+		Uint64 framestart = SDL_GetTicks();
+
 		while (SDL_PollEvent(&event))
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
@@ -108,6 +115,13 @@ int main(int argc, char* argv[])
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 
 		SDL_RenderPresent(renderer);
+
+		// 60 fps
+		Uint64 frameTime = SDL_GetTicks() - framestart;
+		if (frameTime < FRAME_DELAY)
+		{
+			SDL_Delay(FRAME_DELAY - frameTime);
+		}
 
 	}
 

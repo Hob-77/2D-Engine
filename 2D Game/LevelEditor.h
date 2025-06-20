@@ -68,6 +68,7 @@ public:
 	void Draw();
 	void DrawUI();
 	void DrawGrid();
+	void DrawLevelBoundary();
 	void PlaceTile(int x, int y);
 	void PlaceTilePreview(int x, int y);
 	void SaveLevel();
