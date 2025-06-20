@@ -88,6 +88,7 @@ void LevelEditor::HandleInput(SDL_Event& event)
 
 void LevelEditor::DrawUI()
 {
+
 	// Main editor window
 	ImGui::Begin("Level Editor");
 
@@ -95,38 +96,63 @@ void LevelEditor::DrawUI()
 	ImGui::Text("Select Tile:");
 	ImGui::Separator();
 
-	if (ImGui::RadioButton("Air (Erase)", selectedTile == Level::TILE_AIR))
+	ImGui::BeginChild("TilePalette", ImVec2(0, 100), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 4)); // Space between buttons
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0)); // remove button padding
+
+	const int tilesPerRow = 8;
+	const float buttonSize = 32.0f;
+
+	// Loop through All possible tiles
+	int tileCount = 0;
+	for (int i = 0; i < 256; i++)
 	{
-		selectedTile = Level::TILE_AIR;
+		// Skip if no texture
+		if (i != Level::TILE_AIR && level->GetTileTexture(i) == nullptr)
+		{
+			continue;
+		}
+
+		ImGui::PushID(i);
+
+		if (i == Level::TILE_AIR)
+		{
+			if (ImGui::Button("Air", ImVec2(buttonSize, buttonSize)))
+			{
+				selectedTile = i;
+			}
+		}
+		else
+		{
+			if (ImGui::ImageButton("", (ImTextureID)(intptr_t)level->GetTileTexture(i), ImVec2(buttonSize, buttonSize)))
+			{
+				selectedTile = i;
+			}
+		}
+		// Highlight selected
+		if (selectedTile == i)
+		{
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			ImVec2 min = ImGui::GetItemRectMin();
+			ImVec2 max = ImGui::GetItemRectMax();
+			drawList->AddRect(
+				ImVec2(min.x - 2, min.y - 2),
+				ImVec2(max.x + 2, max.y + 2),
+				IM_COL32(255, 255, 0, 255), 0.0f, 0, 3.0f);
+		}
+
+		ImGui::PopID();
+
+		// Grid Layout
+		tileCount++;
+		if (tileCount % tilesPerRow != 0)
+		{
+			ImGui::SameLine();
+		}
 	}
-	if (ImGui::RadioButton("Spike Up", selectedTile == Level::TILE_SPIKE_UP))
-	{
-		selectedTile = Level::TILE_SPIKE_UP;
-	}
-	if (ImGui::RadioButton("Spike Down", selectedTile == Level::TILE_SPIKE_DOWN))
-	{
-		selectedTile = Level::TILE_SPIKE_DOWN;
-	}
-	if (ImGui::RadioButton("Spike Left", selectedTile == Level::TILE_SPIKE_LEFT))
-	{
-		selectedTile = Level::TILE_SPIKE_LEFT;
-	}
-	if (ImGui::RadioButton("Spike Right", selectedTile == Level::TILE_SPIKE_RIGHT))
-	{
-		selectedTile = Level::TILE_SPIKE_RIGHT;
-	}
-	if (ImGui::RadioButton("Grass Floor", selectedTile == Level::TILE_GRASS_FLOOR))
-	{
-		selectedTile = Level::TILE_GRASS_FLOOR;
-	}
-	if (ImGui::RadioButton("Dirt Floor", selectedTile == Level::TILE_DIRT_FLOOR))
-	{
-		selectedTile = Level::TILE_DIRT_FLOOR;
-	}
-	if (ImGui::RadioButton("Brick Floor", selectedTile == Level::TILE_BRICK_FLOOR))
-	{
-		selectedTile = Level::TILE_BRICK_FLOOR;
-	}
+	ImGui::PopStyleVar(2); // Pop both style vars
+	ImGui::EndChild();
 
 	ImGui::Separator();
 
@@ -254,7 +280,6 @@ void LevelEditor::PlaceTile(int x, int y)
 	if (x >= 0 && x < level->MAPWIDTH && y >= 0 && y < level->MAPHEIGHT)
 	{
 		level->Tiles.Get(x, y) = selectedTile;
-		SDL_Log("Placed tile %d at (%d, %d)", selectedTile, x, y);
 	}
 }
 
@@ -453,7 +478,7 @@ void LevelEditor::RenderWithCamera()
 			screenRect.w = Level::TILE_SIZE * cameraZoom;
 			screenRect.h = Level::TILE_SIZE * cameraZoom;
 
-			SDL_RenderTexture(renderer, level->tileTextures[tileType], nullptr, &screenRect);
+			SDL_RenderTexture(renderer, level->GetTileTexture(tileType), nullptr, &screenRect);
 
 		}
 	}

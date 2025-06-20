@@ -10,8 +10,10 @@ private:
 public:
 	// Level constraints
 	static constexpr uint8_t TILE_SIZE = 16;
+	// One screen size on modern displays
 	static constexpr uint16_t MIN_WIDTH = 40;
 	static constexpr uint16_t MIN_HEIGHT = 23;
+	// Huge level maximum size
 	static constexpr uint16_t MAX_WIDTH = 1000;
 	static constexpr uint16_t MAX_HEIGHT = 1000;
 
@@ -37,7 +39,7 @@ public:
 		TILE_BRICK_FLOOR = 7,
 	};
 
-	// Needed for imgui place tile preview 
+	// Getter: Needed for ImGui
 	SDL_Texture* GetTileTexture(uint8_t tileType)
 	{
 		return tileTextures[tileType];
