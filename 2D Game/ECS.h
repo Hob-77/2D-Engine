@@ -311,27 +311,37 @@ public:
 		velocities.Remove(entity);
 	}
 
+	// Query for entities with 1 component
+	template<typename T1, typename Func>
+	void Query(Func func)
+	{
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+
+		for (int i = 0; i < set1->Count(); i++)
+		{
+			Entity entity = set1->GetEntity(i);
+			func(entity, set1->GetData(i));
+		}
+	}
+
 	// Query for entities with 2 components
 	template<typename T1, typename T2, typename Func>
 	void Query(Func func)
 	{
-		// Find which sparse set is smaller
 		SparseSet<T1>* set1 = GetSparseSet<T1>();
 		SparseSet<T2>* set2 = GetSparseSet<T2>();
 
-		// Iterate through the smaller set
+		// Iterate smaller set for performance
 		if (set1->Count() <= set2->Count())
 		{
 			for (int i = 0; i < set1->Count(); i++)
 			{
 				Entity entity = set1->GetEntity(i);
-
-				// Check if entity has the other component
 				T2* comp2 = set2->Get(entity);
+
 				if (comp2)
 				{
-					T1& comp1 = set1->GetData(i);
-					func(entity, comp1, *comp2);
+					func(entity, set1->GetData(i), *comp2);
 				}
 			}
 		}
@@ -340,13 +350,108 @@ public:
 			for (int i = 0; i < set2->Count(); i++)
 			{
 				Entity entity = set2->GetEntity(i);
-				// Check if entity has the other component
 				T1* comp1 = set1->Get(entity);
+
 				if (comp1)
 				{
-					T2& comp2 = set2->GetData(i);
-					func(entity, *comp1, comp2);
+					func(entity, *comp1, set2->GetData(i));
 				}
+			}
+		}
+	}
+
+	// Query for entities with 3 components
+	template<typename T1, typename T2, typename T3, typename Func>
+	void Query(Func func)
+	{
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+		SparseSet<T2>* set2 = GetSparseSet<T2>();
+		SparseSet<T3>* set3 = GetSparseSet<T3>();
+
+		for (int i = 0; i < set1->Count(); i++)
+		{
+			Entity entity = set1->GetEntity(i);
+			T2* comp2 = set2->Get(entity);
+			T3* comp3 = set3->Get(entity);
+
+			if (comp2 && comp3)
+			{
+				func(entity, set1->GetData(i), *comp2, *comp3);
+			}
+		}
+	}
+
+	// Query for entities with 4 components
+	template<typename T1, typename T2, typename T3, typename T4, typename Func>
+	void Query(Func func)
+	{
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+		SparseSet<T2>* set2 = GetSparseSet<T2>();
+		SparseSet<T3>* set3 = GetSparseSet<T3>();
+		SparseSet<T4>* set4 = GetSparseSet<T4>();
+
+		for (int i = 0; i < set1->Count(); i++)
+		{
+			Entity entity = set1->GetEntity(i);
+			T2* comp2 = set2->Get(entity);
+			T3* comp3 = set3->Get(entity);
+			T4* comp4 = set4->Get(entity);
+
+			if (comp2 && comp3 && comp4)
+			{
+				func(entity, set1->GetData(i), *comp2, *comp3, *comp4);
+			}
+		}
+	}
+
+	// Query for entities with 5 components
+	template<typename T1, typename T2, typename T3, typename T4, typename T5, typename Func>
+	void Query(Func func)
+	{
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+		SparseSet<T2>* set2 = GetSparseSet<T2>();
+		SparseSet<T3>* set3 = GetSparseSet<T3>();
+		SparseSet<T4>* set4 = GetSparseSet<T4>();
+		SparseSet<T5>* set5 = GetSparseSet<T5>();
+
+		for (int i = 0; i < set1->Count(); i++)
+		{
+			Entity entity = set1->GetEntity(i);
+			T2* comp2 = set2->Get(entity);
+			T3* comp3 = set3->Get(entity);
+			T4* comp4 = set4->Get(entity);
+			T5* comp5 = set5->Get(entity);
+
+			if (comp2 && comp3 && comp4 && comp5)
+			{
+				func(entity, set1->GetData(i), *comp2, *comp3, *comp4, *comp5);
+			}
+		}
+	}
+
+	// Query for entities with 6 components
+	template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename Func>
+	void Query(Func func)
+	{
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+		SparseSet<T2>* set2 = GetSparseSet<T2>();
+		SparseSet<T3>* set3 = GetSparseSet<T3>();
+		SparseSet<T4>* set4 = GetSparseSet<T4>();
+		SparseSet<T5>* set5 = GetSparseSet<T5>();
+		SparseSet<T6>* set6 = GetSparseSet<T6>();
+
+		for (int i = 0; i < set1->Count(); i++)
+		{
+			Entity entity = set1->GetEntity(i);
+			T2* comp2 = set2->Get(entity);
+			T3* comp3 = set3->Get(entity);
+			T4* comp4 = set4->Get(entity);
+			T5* comp5 = set5->Get(entity);
+			T6* comp6 = set6->Get(entity);
+
+			if (comp2 && comp3 && comp4 && comp5 && comp6)
+			{
+				func(entity, set1->GetData(i), *comp2, *comp3, *comp4, *comp5, *comp6);
 			}
 		}
 	}

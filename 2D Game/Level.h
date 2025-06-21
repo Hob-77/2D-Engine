@@ -3,6 +3,13 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 
+struct SpawnPoint
+{
+	float x;
+	float y;
+	const char* type;
+};
+
 class Level
 {
 private:
@@ -21,6 +28,10 @@ public:
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
+
+	// Spawn for entities
+	Array<SpawnPoint> spawnPoints;
+	int spawnCount;
 
 	enum TileType : uint8_t
 	{
@@ -112,7 +123,7 @@ public:
 	}
 
 	// Creates level
-	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
+	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256), spawnPoints(32), spawnCount(0)
 	{
 
 		// Sets the pointers to nullptr
@@ -124,19 +135,6 @@ public:
 		// Tiles are now empty
 		Tiles.Clear(TILE_AIR);
 
-	}
-
-	// Free's Gpu memory after the level is done since the textures are stored in the Gpu
-	~Level()
-	{
-		for (int i = 0; i < 256; i++)
-		{
-			if (tileTextures[i] != nullptr)
-			{
-				SDL_DestroyTexture(tileTextures[i]);
-				tileTextures[i] = nullptr;
-			}
-		}
 	}
 
 	bool SaveToFile(const char* filename)
@@ -228,5 +226,23 @@ public:
 		SDL_Log("Level loaded: %s (%dx%d)", filename, MAPWIDTH, MAPHEIGHT);
 		return true;
 	}
+
+	void AddSpawnPoint(float x, float y, const char* type)
+	{
+		if (spawnCount >= spawnPoints.Size())
+		{
+			spawnPoints.Resize(spawnPoints.Size() * 2);
+		}
+		spawnPoints[spawnCount] = { x,y,type };
+		spawnCount++;
+	}
+
+	void ClearSpawnPoints()
+	{
+		spawnCount = 0;
+	}
+
+	int GetSpawnCount() const { return spawnCount; }
+	const SpawnPoint& GetSpawnPoint(int index) const { return spawnPoints[index]; }
 
 };

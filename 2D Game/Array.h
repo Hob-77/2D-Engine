@@ -58,6 +58,11 @@ public:
 		m_array = newarray;
 	}
 
+	const Datatype& operator[] (int p_index) const
+	{
+		return m_array[p_index];
+	}
+
 	Datatype& operator[] (int p_index)
 	{
 		return m_array[p_index];

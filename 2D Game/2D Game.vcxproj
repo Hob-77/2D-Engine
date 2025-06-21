@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="Array.h" />
     <ClInclude Include="ECS.h" />
+    <ClInclude Include="GameWorld.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_sdl3.h" />
