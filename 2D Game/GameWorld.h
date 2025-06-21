@@ -7,6 +7,7 @@ class GameWorld
 private:
 	World world;
 	Level* currentLevel;
+
 public:
 	GameWorld() : currentLevel(nullptr)
 	{
