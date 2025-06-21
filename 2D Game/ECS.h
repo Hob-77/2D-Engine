@@ -47,40 +47,166 @@ struct Velocity {
 	float dy = 0;
 };
 
+template<typename T>
+class SparseSet
+{
+private:
+	static const uint32_t INVALID_INDEX = MAX_ENTITIES + 1;
+
+	Array<uint32_t> sparse; // entity -> dense index
+	Array<Entity> dense;
+	Array<T> data;
+	int count = 0;
+	int capacity = 0;
+
+	void Grow()
+	{
+		int newCapacity = capacity == 0 ? 64 : capacity * 2;
+
+		// Create new arrays
+		Array<Entity> newDense(newCapacity);
+		Array<T> newData(newCapacity);
+
+		// Copy existing data
+		for (int i = 0; i < count; i++)
+		{
+			newDense[i] = dense[i];
+			newData[i] = data[i];
+		}
+
+		// Swap arrays
+		dense = newDense;
+		data = newData;
+		capacity = newCapacity;
+	}
+
+public:
+	SparseSet() : sparse(MAX_ENTITIES), dense(0), data(0), count(0), capacity(0)
+	{
+		// Initialize sparse array to invalid indices
+		for (int i = 0; i < MAX_ENTITIES; i++)
+		{
+			sparse[i] = INVALID_INDEX;
+		}
+	}
+
+	void Add(Entity entity, const T& component)
+	{
+		if (entity >= MAX_ENTITIES)
+		{
+			return;
+		}
+
+		if (Has(entity))
+		{
+			// Update existing component
+			data[sparse[entity]] = component;
+			return;
+		}
+
+		// Grow if needed
+		if (count >= capacity)
+		{
+			Grow();
+		}
+
+		// Add new component
+		sparse[entity] = count;
+		dense[count] = entity;
+		data[count] = component;
+		count++;
+	}
+
+	void Remove(Entity entity)
+	{
+		if (!Has(entity))
+		{
+			return;
+		}
+
+		uint32_t index = sparse[entity];
+		uint32_t lastIndex = count - 1;
+
+		// Swap with last element if not already last
+		if (index != lastIndex)
+		{
+			Entity lastEntity = dense[lastIndex];
+
+			dense[index] = lastEntity;
+			data[index] = data[lastIndex];
+			sparse[lastEntity] = index;
+		}
+
+		// Mark as removed
+		sparse[entity] = INVALID_INDEX;
+		count--;
+	}
+
+	T* Get(Entity entity)
+	{
+		if (!Has(entity))
+		{
+			return nullptr;
+		}
+
+		return &data[sparse[entity]];
+	}
+
+	bool Has(Entity entity) const
+	{
+		if (entity >= MAX_ENTITIES)
+		{
+			return false;
+		}
+		uint32_t index = sparse[entity];
+		return index < count && dense[index] == entity;
+	}
+
+	int Count() const
+	{
+		return count;
+	}
+
+	T& GetData(int index)
+	{
+		return data[index];
+	}
+
+	Entity GetEntity(int index) const
+	{
+		return dense[index];
+	}
+
+	// Clear all components
+	void Clear()
+	{
+		for (int i = 0; i < count; i++)
+		{
+			sparse[dense[i]] = INVALID_INDEX;
+		}
+		count = 0;
+	}
+
+};
+
 class World {
 private:
 	Entity nextEntity = 1;
 
-	Array<Transform> transforms;
-	Array<Sprite> sprites;
-	Array<Animation> animations;
-	Array<Velocity> velocities;
-
-	Array<bool> hasTransform;
-	Array<bool> hasSprite;
-	Array<bool> hasAnimation;
-	Array<bool> hasVelocity;
+	// Sparse sets for each component type
+	SparseSet<Transform> transforms;
+	SparseSet<Sprite> sprites;
+	SparseSet<Animation> animations;
+	SparseSet<Velocity> velocities;
 
 public:
-	World() :
-		transforms(MAX_ENTITIES),
-		sprites(MAX_ENTITIES),
-		animations(MAX_ENTITIES),
-		velocities(MAX_ENTITIES),
-		hasTransform(MAX_ENTITIES),
-		hasSprite(MAX_ENTITIES),
-		hasAnimation(MAX_ENTITIES),
-		hasVelocity(MAX_ENTITIES)
+	World()
 	{
 
-		for (int i = 0; i < MAX_ENTITIES; i++)
-		{
-			hasTransform[i] = false;
-			hasSprite[i] = false;
-			hasAnimation[i] = false;
-			hasVelocity[i] = false;
-		}
 	}
+	// Get sparse sets by type
+	template<typename T>
+	SparseSet<T>* GetSparseSet();
 
 	// Make Entity
 	Entity CreateEntity()
@@ -96,116 +222,138 @@ public:
 
 	void AddTransform(Entity entity, const Transform& transform)
 	{
-		transforms[entity] = transform;
-		hasTransform[entity] = true;
+		transforms.Add(entity, transform);
 	}
 
 	void AddSprite(Entity entity, const Sprite& sprite)
 	{
-		sprites[entity] = sprite;
-		hasSprite[entity] = true;
+		sprites.Add(entity, sprite);
 	}
 
 	void AddAnimation(Entity entity, const Animation& animation)
 	{
-		animations[entity] = animation;
-		hasAnimation[entity] = true;
+		animations.Add(entity, animation);
 	}
 
 	void AddVelocity(Entity entity, const Velocity& velocity)
 	{
-		velocities[entity] = velocity;
-		hasVelocity[entity] = true;
+		velocities.Add(entity, velocity);
 	}
 
 	// Get components
 	Transform* GetTransform(Entity entity)
 	{
-		if (entity < MAX_ENTITIES && hasTransform[entity])
-		{
-			return &transforms[entity];
-		}
-		return nullptr;
+		return transforms.Get(entity);
 	}
 
 	Sprite* GetSprite(Entity entity)
 	{
-		if (entity < MAX_ENTITIES && hasSprite[entity])
-		{
-			return &sprites[entity];
-		}
-		return nullptr;
+		return sprites.Get(entity);
 	}
 
 	Animation* GetAnimation(Entity entity)
 	{
-		if (entity < MAX_ENTITIES && hasAnimation[entity])
-		{
-			return &animations[entity];
-		}
-		return nullptr;
+		return animations.Get(entity);
 	}
 
 	Velocity* GetVelocity(Entity entity)
 	{
-		if (entity < MAX_ENTITIES && hasVelocity[entity])
-		{
-			return &velocities[entity];
-		}
-		return nullptr;
+		return velocities.Get(entity);
 	}
 
 	// Remove components
 	void RemoveTransform(Entity entity)
 	{
-		hasTransform[entity] = false;
+		transforms.Remove(entity);
 	}
 
 	void RemoveSprite(Entity entity)
 	{
-		hasSprite[entity] = false;
+		sprites.Remove(entity);
 	}
 
 	void RemoveAnimation(Entity entity)
 	{
-		hasAnimation[entity] = false;
+		animations.Remove(entity);
 	}
 
 	void RemoveVelocity(Entity entity)
 	{
-		hasVelocity[entity] = false;
+		velocities.Remove(entity);
 	}
 
 	bool HasTransform(Entity entity)
 	{
-		return entity < MAX_ENTITIES && hasTransform[entity];
+		return transforms.Has(entity);
 	}
 
 	bool HasSprite(Entity entity)
 	{
-		return entity < MAX_ENTITIES && hasSprite[entity];
+		return sprites.Has(entity);
 	}
 
 	bool HasAnimation(Entity entity)
 	{
-		return entity < MAX_ENTITIES && hasAnimation[entity];
+		return animations.Has(entity);
 	}
 
 	bool HasVelocity(Entity entity)
 	{
-		return entity < MAX_ENTITIES && hasVelocity[entity];
+		return velocities.Has(entity);
 	}
 
 	// Remove components from entity
 	void DestroyEntity(Entity entity)
 	{
-		if (entity < MAX_ENTITIES)
+		transforms.Remove(entity);
+		sprites.Remove(entity);
+		animations.Remove(entity);
+		velocities.Remove(entity);
+	}
+
+	// Query for entities with 2 components
+	template<typename T1, typename T2, typename Func>
+	void Query(Func func)
+	{
+		// Find which sparse set is smaller
+		SparseSet<T1>* set1 = GetSparseSet<T1>();
+		SparseSet<T2>* set2 = GetSparseSet<T2>();
+
+		// Iterate through the smaller set
+		if (set1->Count() <= set2->Count())
 		{
-			hasTransform[entity] = false;
-			hasSprite[entity] = false;
-			hasAnimation[entity] = false;
-			hasVelocity[entity] = false;
+			for (int i = 0; i < set1->Count(); i++)
+			{
+				Entity entity = set1->GetEntity(i);
+
+				// Check if entity has the other component
+				T2* comp2 = set2->Get(entity);
+				if (comp2)
+				{
+					T1& comp1 = set1->GetData(i);
+					func(entity, comp1, *comp2);
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < set2->Count(); i++)
+			{
+				Entity entity = set2->GetEntity(i);
+				// Check if entity has the other component
+				T1* comp1 = set1->Get(entity);
+				if (comp1)
+				{
+					T2& comp2 = set2->GetData(i);
+					func(entity, *comp1, comp2);
+				}
+			}
 		}
 	}
 
 };
+
+template<> inline SparseSet<Transform>* World::GetSparseSet<Transform>() { return &transforms; }
+template<> inline SparseSet<Velocity>* World::GetSparseSet<Velocity>() { return &velocities; }
+template<> inline SparseSet<Sprite>* World::GetSparseSet<Sprite>() { return &sprites; }
+template<> inline SparseSet<Animation>* World::GetSparseSet<Animation>() { return &animations; }
