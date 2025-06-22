@@ -5,6 +5,8 @@
 #include "AABB.h"
 #include <SDL3/SDL.h>
 
+struct Player;
+
 // Entity
 using Entity = std::uint32_t;
 const Entity NULL_ENTITY = 0;
@@ -75,6 +77,32 @@ struct Collider
 	bool isTrigger = false;
 	bool isStatic = false;
 
+};
+
+struct CollisionState
+{
+	// Current fram collision info 
+	bool isGrounded = false;
+	bool isTouchingCeiling = false;
+	bool isTouchingWallLeft = false;
+	bool isTouchingWallRight = false;
+
+	// What we're colliding with
+	Entity groundEntity = NULL_ENTITY;
+	Vec2 groundNormal = Vec2(0, -1);
+
+	float timeSinceGrounded = 0.0f;
+	float timeSinceWallTouch = 0.0f;
+
+	// Clear all flags (called at start of physics update)
+	void Clear() {
+		isGrounded = false;
+		isTouchingCeiling = false;
+		isTouchingWallLeft = false;
+		isTouchingWallRight = false;
+		groundEntity = NULL_ENTITY;
+		groundNormal = Vec2(0, -1);
+	}
 };
 
 template<typename T>
@@ -229,6 +257,8 @@ private:
 	SparseSet<Animation> animations;
 	SparseSet<Physics> physics;
 	SparseSet<Collider> colliders;
+	SparseSet<CollisionState> collisionStates;
+	SparseSet<Player> players;
 
 public:
 	World()
@@ -276,6 +306,16 @@ public:
 		colliders.Add(entity, collider);
 	}
 
+	void AddCollisionState(Entity entity, const CollisionState& state)
+	{
+		collisionStates.Add(entity, state);
+	}
+
+	void AddPlayer(Entity entity, const Player& player)
+	{
+		players.Add(entity, player);
+	}
+
 	// Get components
 	Transform* GetTransform(Entity entity)
 	{
@@ -300,6 +340,16 @@ public:
 	Collider* GetCollider(Entity entity)
 	{
 		return colliders.Get(entity);
+	}
+
+	CollisionState* GetCollisionState(Entity entity)
+	{
+		return collisionStates.Get(entity);
+	}
+
+	Player* GetPlayer(Entity entity)
+	{
+		return players.Get(entity);
 	}
 
 	// Remove components
@@ -328,6 +378,16 @@ public:
 		colliders.Remove(entity);
 	}
 
+	void RemoveCollisionState(Entity entity)
+	{
+		collisionStates.Remove(entity);
+	}
+
+	void RemovePlayer(Entity entity)
+	{
+		players.Remove(entity);
+	}
+
 	bool HasTransform(Entity entity)
 	{
 		return transforms.Has(entity);
@@ -353,6 +413,16 @@ public:
 		return colliders.Has(entity);
 	}
 
+	bool HasCollisionState(Entity entity)
+	{
+		return collisionStates.Has(entity);
+	}
+
+	bool HasPlayer(Entity entity)
+	{
+		return players.Has(entity);
+	}
+
 	// Remove components from entity
 	void DestroyEntity(Entity entity)
 	{
@@ -361,6 +431,8 @@ public:
 		animations.Remove(entity);
 		physics.Remove(entity);
 		colliders.Remove(entity);
+		collisionStates.Remove(entity);
+		players.Remove(entity);
 	}
 
 	// Query for entities with 1 component
@@ -515,3 +587,5 @@ template<> inline SparseSet<Physics>* World::GetSparseSet<Physics>() { return &p
 template<> inline SparseSet<Sprite>* World::GetSparseSet<Sprite>() { return &sprites; }
 template<> inline SparseSet<Animation>* World::GetSparseSet<Animation>() { return &animations; }
 template<> inline SparseSet<Collider>* World::GetSparseSet<Collider>() { return &colliders; }
+template<> inline SparseSet<CollisionState>* World::GetSparseSet<CollisionState>() { return &collisionStates; }
+template<> inline SparseSet<Player>* World::GetSparseSet<Player>() { return &players; }
