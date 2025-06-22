@@ -10,18 +10,9 @@ using Entity = std::uint32_t;
 const Entity NULL_ENTITY = 0;
 const int MAX_ENTITIES = 10000;
 
-enum ComponentType {
-	COMPONENT_TRANSFORM,
-	COMPONENT_SPRITE,
-	COMPONENT_ANIMATION,
-	COMPONENT_VELOCITY,
-	MAX_COMPONENTS
-};
-
 // Components
 struct Transform {
-	float x = 0;
-	float y = 0;
+	Vec2 position;
 	float rotation = 0;
 	float scale = 1;
 };
@@ -42,11 +33,48 @@ struct Animation {
 	float frameTime = 0.1f;
 	float timer = 0.0f;
 	bool loop = true;
+	bool playing = true;
 };
 
-struct Velocity {
-	float dx = 0;
-	float dy = 0;
+struct Physics {
+	// Motion
+	Vec2 velocity;
+	Vec2 acceleration;
+
+	// Gravity
+	float gravityScale = 1.0f;
+	float maxFallSpeed = 600.0f;
+
+	// Friction
+	float linearDamping = 0.0f;
+
+	// Type
+	bool isKinematic = false;
+};
+
+enum CollisionLayers : uint16_t
+{
+	LAYER_DEFAULT = 1 << 0,
+	LAYER_PLAYER  = 1 << 1,
+	LAYER_ENEMY   = 1 << 2,
+	LAYER_PLATFORM= 1 << 3,
+	LAYER_TRIGGER = 1 << 4,
+};
+
+struct Collider
+{
+	// Size and offset
+	Vec2 size;
+	Vec2 offset;
+
+	// Collision layers (bitflags)
+	uint16_t layer = LAYER_DEFAULT;
+	uint16_t collidesWith = 0xFFFF;
+
+	// Type
+	bool isTrigger = false;
+	bool isStatic = false;
+
 };
 
 template<typename T>
@@ -199,7 +227,8 @@ private:
 	SparseSet<Transform> transforms;
 	SparseSet<Sprite> sprites;
 	SparseSet<Animation> animations;
-	SparseSet<Velocity> velocities;
+	SparseSet<Physics> physics;
+	SparseSet<Collider> colliders;
 
 public:
 	World()
@@ -237,9 +266,14 @@ public:
 		animations.Add(entity, animation);
 	}
 
-	void AddVelocity(Entity entity, const Velocity& velocity)
+	void AddPhysics(Entity entity, const Physics& phys)
 	{
-		velocities.Add(entity, velocity);
+		physics.Add(entity, phys);
+	}
+
+	void AddCollider(Entity entity, const Collider& collider)
+	{
+		colliders.Add(entity, collider);
 	}
 
 	// Get components
@@ -258,9 +292,14 @@ public:
 		return animations.Get(entity);
 	}
 
-	Velocity* GetVelocity(Entity entity)
+	Physics* GetPhysics(Entity entity)
 	{
-		return velocities.Get(entity);
+		return physics.Get(entity);
+	}
+
+	Collider* GetCollider(Entity entity)
+	{
+		return colliders.Get(entity);
 	}
 
 	// Remove components
@@ -279,9 +318,14 @@ public:
 		animations.Remove(entity);
 	}
 
-	void RemoveVelocity(Entity entity)
+	void RemovePhysics(Entity entity)
 	{
-		velocities.Remove(entity);
+		physics.Remove(entity);
+	}
+
+	void RemoveCollider(Entity entity)
+	{
+		colliders.Remove(entity);
 	}
 
 	bool HasTransform(Entity entity)
@@ -299,9 +343,14 @@ public:
 		return animations.Has(entity);
 	}
 
-	bool HasVelocity(Entity entity)
+	bool HasPhysics(Entity entity)
 	{
-		return velocities.Has(entity);
+		return physics.Has(entity);
+	}
+
+	bool HasCollider(Entity entity)
+	{
+		return colliders.Has(entity);
 	}
 
 	// Remove components from entity
@@ -310,7 +359,8 @@ public:
 		transforms.Remove(entity);
 		sprites.Remove(entity);
 		animations.Remove(entity);
-		velocities.Remove(entity);
+		physics.Remove(entity);
+		colliders.Remove(entity);
 	}
 
 	// Query for entities with 1 component
@@ -461,6 +511,7 @@ public:
 };
 
 template<> inline SparseSet<Transform>* World::GetSparseSet<Transform>() { return &transforms; }
-template<> inline SparseSet<Velocity>* World::GetSparseSet<Velocity>() { return &velocities; }
+template<> inline SparseSet<Physics>* World::GetSparseSet<Physics>() { return &physics; }
 template<> inline SparseSet<Sprite>* World::GetSparseSet<Sprite>() { return &sprites; }
 template<> inline SparseSet<Animation>* World::GetSparseSet<Animation>() { return &animations; }
+template<> inline SparseSet<Collider>* World::GetSparseSet<Collider>() { return &colliders; }

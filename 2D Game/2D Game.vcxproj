@@ -169,6 +169,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Level.h" />
     <ClInclude Include="LevelEditor.h" />
+    <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="Vec2.h" />
   </ItemGroup>
