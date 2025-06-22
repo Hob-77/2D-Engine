@@ -210,7 +210,7 @@ public:
 		return m_width * m_height;
 	}
 
-	Datatype& Get(int p_x, int p_y)
+	Datatype& Get(int p_x, int p_y) const
 	{
 		return m_array[p_y * m_width + p_x];
 	}

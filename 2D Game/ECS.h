@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include "Array.h"
+#include "Vec2.h"
+#include "AABB.h"
 #include <SDL3/SDL.h>
 
 // Entity

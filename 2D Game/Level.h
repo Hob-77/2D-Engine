@@ -1,19 +1,31 @@
 #pragma once
 #include "Array.h"
+#include "AABB.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 
-struct SpawnPoint
-{
-	float x;
-	float y;
-	const char* type;
-};
-
 class Level
 {
-private:
+public:
+	struct TileProperties
+	{
+		bool isSolid;
+		AABB collisionBox;
+		bool isDamaging;
+		uint8_t damageAmount;
 
+		// Default: empty tile
+		TileProperties() :
+			isSolid(false),
+			collisionBox({ Vec2(0,0), Vec2(16,16) }),
+			isDamaging(false),
+			damageAmount(0) {
+		}
+
+	};
+
+private:
+	static TileProperties tileProperties[256];
 public:
 	// Level constraints
 	static constexpr uint8_t TILE_SIZE = 16;
@@ -28,10 +40,6 @@ public:
 	uint16_t MAPWIDTH, MAPHEIGHT;
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
-
-	// Spawn for entities
-	Array<SpawnPoint> spawnPoints;
-	int spawnCount;
 
 	enum TileType : uint8_t
 	{
@@ -123,7 +131,7 @@ public:
 	}
 
 	// Creates level
-	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256), spawnPoints(32), spawnCount(0)
+	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
 	{
 
 		// Sets the pointers to nullptr
@@ -227,22 +235,58 @@ public:
 		return true;
 	}
 
-	void AddSpawnPoint(float x, float y, const char* type)
+
+	static void InitializeTileProperties()
 	{
-		if (spawnCount >= spawnPoints.Size())
+		// Air - no collision
+		tileProperties[TILE_AIR] = TileProperties();
+
+		// Solid floors - full tile collision
+		tileProperties[TILE_GRASS_FLOOR].isSolid = true;
+		tileProperties[TILE_DIRT_FLOOR].isSolid = true;
+		tileProperties[TILE_BRICK_FLOOR].isSolid = true;
+
+
+	}
+
+	static const TileProperties& GetTileProperties(uint8_t tileType)
+	{
+		return tileProperties[tileType];
+	}
+
+	bool CheckSolidCollision(const AABB& box) const
+	{
+		// convert to tile coordinates
+		int startX = std::max(0, (int)(box.min.x / TILE_SIZE));
+		int startY = std::max(0, (int)(box.min.y / TILE_SIZE));
+		int endX = std::min((int)MAPWIDTH - 1, (int)(box.max.x / TILE_SIZE));
+		int endY = std::min((int)MAPHEIGHT - 1, (int)(box.max.y / TILE_SIZE));
+
+		for (int y = startY; y <= endY; y++)
 		{
-			spawnPoints.Resize(spawnPoints.Size() * 2);
+			for (int x = startX; x <= endX; x++)
+			{
+				uint8_t tileType = Tiles.Get(x, y);
+				const TileProperties& props = GetTileProperties(tileType);
+
+				if (props.isSolid)
+				{
+					AABB tileBox = AABB::FromPositionSize(
+						Vec2(x * TILE_SIZE, y * TILE_SIZE),
+						Vec2(TILE_SIZE, TILE_SIZE)
+					);
+
+					if (box.intersects(tileBox))
+					{
+						return true;
+					}
+				}
+
+			}
 		}
-		spawnPoints[spawnCount] = { x,y,type };
-		spawnCount++;
+		return false;
 	}
-
-	void ClearSpawnPoints()
-	{
-		spawnCount = 0;
-	}
-
-	int GetSpawnCount() const { return spawnCount; }
-	const SpawnPoint& GetSpawnPoint(int index) const { return spawnPoints[index]; }
 
 };
+
+inline Level::TileProperties Level::tileProperties[256];
