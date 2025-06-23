@@ -41,6 +41,10 @@ public:
 	Array2D<uint8_t> Tiles;
 	Array<SDL_Texture*> tileTextures;
 
+	// Player spawn point
+	Vec2 playerSpawnPoint;
+	bool hasPlayerSpawn = false;
+
 	enum TileType : uint8_t
 	{
 		// Empty
@@ -143,6 +147,11 @@ public:
 		// Tiles are now empty
 		Tiles.Clear(TILE_AIR);
 
+		playerSpawnPoint = Vec2(
+			(width * TILE_SIZE) / 2.0f,
+			(height * TILE_SIZE) / 2.0f
+		);
+		hasPlayerSpawn = true;
 	}
 
 	bool SaveToFile(const char* filename)
@@ -163,6 +172,17 @@ public:
 			{
 				SDL_WriteU8(file, Tiles.Get(x, y));
 			}
+		}
+
+		// Player spawn point
+		SDL_WriteU8(file, hasPlayerSpawn ? 1 : 0);
+		if (hasPlayerSpawn)
+		{
+			// write as floats
+			float x = playerSpawnPoint.x;
+			float y = playerSpawnPoint.y;
+			SDL_WriteIO(file, &x, sizeof(float));
+			SDL_WriteIO(file, &y, sizeof(float));
 		}
 
 		SDL_CloseIO(file);
@@ -228,6 +248,18 @@ public:
 				}
 				Tiles.Get(x, y) = tile;
 			}
+		}
+
+		// Load Player spawn
+		uint8_t hasSpawn;
+		bytesRead = SDL_ReadIO(file, &hasSpawn, 1);
+		if (bytesRead == 1 && hasSpawn)
+		{
+			float x, y;
+			SDL_ReadIO(file, &x, sizeof(float));
+			SDL_ReadIO(file, &y, sizeof(float));
+			playerSpawnPoint = Vec2(x, y);
+			hasPlayerSpawn = true;
 		}
 
 		SDL_CloseIO(file);

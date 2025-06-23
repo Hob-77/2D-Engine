@@ -1,5 +1,8 @@
 #pragma once
 #include "Level.h"
+#include "ECS.h"
+#include "PhysicsSystem.h"
+#include "PlayerController.h"
 
 class LevelEditor
 {
@@ -33,6 +36,32 @@ private:
 	float cameraX, cameraY;
 	float cameraZoom;
 
+	// Editor modes
+	enum EditorMode
+	{
+		MODE_TILES,
+		MODE_PLAYER_SPAWN,
+		MODE_PLAY
+	};
+
+	// Play mode state
+	bool isPlaying = false;
+
+	World* world = nullptr;
+
+	// Game systems
+	class PhysicsSystem* physicsSystem = nullptr;
+	class PlayerControllerSystem* PlayerControllerSystem = nullptr;
+
+	// Player entity
+	Entity* playerEntity = nullptr;
+
+	// Tile placing state (default)
+	EditorMode currentMode = MODE_TILES;
+
+	// For spawn visuals
+	SDL_Texture* playerSpawnIcon = nullptr;
+
 public:
 	SDL_Renderer* renderer; // We need for drawing grid/overlays, not for the Level itself
 
@@ -47,6 +76,13 @@ public:
 		// Default Level
 		level = new Level(Level::MIN_WIDTH, Level::MIN_HEIGHT);
 		level->LoadTextures(renderer);
+
+		playerSpawnIcon = IMG_LoadTexture(renderer, "Assets/player_spawn.png");
+		if (!playerSpawnIcon)
+		{
+			// Draw square if nothing
+			SDL_Log("No player spawn icon found, using default marker");
+		}
 
 		// Initialize camera
 		ResetZoom();
@@ -69,11 +105,14 @@ public:
 	void DrawUI();
 	void DrawGrid();
 	void DrawLevelBoundary();
+	void DrawPlayerSpawn();
 	void PlaceTile(int x, int y);
 	void PlaceTilePreview(int x, int y);
 	void SaveLevel();
 	void LoadLevel();
 	void CreateNewLevel(int width, int height);
+	void StartPlayMode();
+	void StopPlayMode();
 
 	// Camera functions
 	void RecenterCamera();

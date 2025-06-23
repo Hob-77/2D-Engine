@@ -55,9 +55,6 @@
     <None Include="Assets\spike_up.aseprite" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Player.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Array.h">
       <Filter>Header Files</Filter>
     </ClInclude>

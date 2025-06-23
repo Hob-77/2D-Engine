@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "Player.h"
 #include "Level.h"
 #include "LevelEditor.h"
 #include "Array.h"
@@ -62,17 +61,28 @@ int main(int argc, char* argv[])
 	// Make level for testing
 	LevelEditor editor(renderer, windowWidth, windowHeight);
 
-	// fps
-	const int TARGET_FPS = 60;
-	const int FRAME_DELAY = 1000 / TARGET_FPS;
+	// Fixed timestep
+	const float FIXED_TIMESTEP = 1.0f / 60.0f;
+	const float MAX_FRAME_TIME = 0.25f;
+
+	float accumulator = 0.0f;
+	float currentTime = SDL_GetTicks() / 1000.0f;
 
 	bool quit = false;
 	SDL_Event event;
 
 	while (!quit)
 	{
-		// fps
-		Uint64 framestart = SDL_GetTicks();
+		// Timing
+		float newTime = SDL_GetTicks() / 1000.0f;
+		float frameTime = newTime - currentTime;
+		currentTime = newTime;
+
+		// Prevent spiral of death
+		frameTime = std::min(frameTime, MAX_FRAME_TIME);
+
+		accumulator += frameTime;
+
 
 		while (SDL_PollEvent(&event))
 		{
@@ -92,6 +102,14 @@ int main(int argc, char* argv[])
 					quit = true;
 				}
 			}
+		}
+
+		while (accumulator >= FIXED_TIMESTEP)
+		{
+
+
+
+			accumulator -= FIXED_TIMESTEP;
 		}
 
 		// Update for movement of screen in editor
@@ -115,14 +133,6 @@ int main(int argc, char* argv[])
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 
 		SDL_RenderPresent(renderer);
-
-		// 60 fps
-		Uint64 frameTime = SDL_GetTicks() - framestart;
-		if (frameTime < FRAME_DELAY)
-		{
-			SDL_Delay(FRAME_DELAY - frameTime);
-		}
-
 	}
 
 	ImGui_ImplSDLRenderer3_Shutdown();

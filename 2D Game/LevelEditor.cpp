@@ -38,7 +38,7 @@ void LevelEditor::HandleInput(SDL_Event& event)
 			currentTileY = (int)(worldY / Level::TILE_SIZE);
 
 			// Place tile while dragging
-			if (isDrawing)
+			if (isDrawing && currentMode == MODE_TILES)
 			{
 				// Only place if we moved to a new tile
 				if (currentTileX != lastPlacedX || currentTileY != lastPlacedY)
@@ -58,7 +58,6 @@ void LevelEditor::HandleInput(SDL_Event& event)
 		// Check to see if mouse click
 		if (!io.WantCaptureMouse)
 		{
-			isDrawing = true;
 
 			float mouseX, mouseY;
 			SDL_GetMouseState(&mouseX, &mouseY);
@@ -66,12 +65,22 @@ void LevelEditor::HandleInput(SDL_Event& event)
 			float worldX, worldY;
 			ScreenToWorld(mouseX, mouseY, worldX, worldY);
 
-			int tileX = (int)(worldX / Level::TILE_SIZE);
-			int tileY = (int)(worldY / Level::TILE_SIZE);
-
-			PlaceTile(tileX, tileY);
-			lastPlacedX = tileX;
-			lastPlacedY = tileY;
+			if (currentMode == MODE_TILES)
+			{
+				isDrawing = true;
+				int tileX = (int)(worldX / Level::TILE_SIZE);
+				int tileY = (int)(worldY / Level::TILE_SIZE);
+				PlaceTile(tileX, tileY);
+				lastPlacedX = tileX;
+				lastPlacedY = tileY;
+			}
+			else if (currentMode == MODE_PLAYER_SPAWN)
+			{
+				// Place spawn at exact click position
+				level->playerSpawnPoint = Vec2(worldX, worldY);
+				level->hasPlayerSpawn = true;
+				SDL_Log("Player spawn set to (%.0f, %.0f)", worldX, worldY);
+			}
 		}
 	}
 
@@ -160,6 +169,56 @@ void LevelEditor::DrawUI()
 	ImGui::Checkbox("Show Grid", &showGrid);
 	ImGui::Separator();
 
+	ImGui::Separator();
+	ImGui::Text("Editor Mode:");
+
+	if (!isPlaying)
+	{
+		if (ImGui::RadioButton("Place TIles", currentMode == MODE_TILES))
+		{
+			currentMode = MODE_TILES;
+		}
+		ImGui::SameLine();
+		if (ImGui::RadioButton("Set Player Spawn", currentMode == MODE_PLAYER_SPAWN))
+		{
+			currentMode = MODE_PLAYER_SPAWN;
+		}
+	}
+	else
+	{
+		ImGui::Text("Currently in Play Mode");
+	}
+
+	// Play/Stop button
+	ImGui::Separator();
+	if (!isPlaying)
+	{
+		if (ImGui::Button("PLAY", ImVec2(100, 30)))
+		{
+			StartPlayMode();
+		}
+	}
+	else
+	{
+		if (ImGui::Button("STOP", ImVec2(100, 30)))
+	    {
+		StopPlayMode();
+	    }
+	}
+
+	// Show spawn info when in spawn mode
+	if (currentMode == MODE_PLAYER_SPAWN)
+	{
+		ImGui::Text("Click to place player spawn point");
+		if (level->hasPlayerSpawn)
+		{
+			ImGui::Text("Current spawn: (%.0f, %.0f)",
+				level->playerSpawnPoint.x,
+				level->playerSpawnPoint.y);
+		}
+	}
+
+	ImGui::Separator();
 	ImGui::Text("File Operations:");
 	ImGui::InputText("Filename", saveFilename, 256);
 
@@ -198,6 +257,8 @@ void LevelEditor::Draw()
 	DrawGrid();
 
 	DrawLevelBoundary();
+
+	DrawPlayerSpawn();
 
 	if (currentTileX >= 0 && currentTileX < level->MAPWIDTH && currentTileY >= 0 && currentTileY < level->MAPHEIGHT)
 	{
@@ -266,6 +327,48 @@ void LevelEditor::DrawGrid()
 			screenY
 		);
 	}
+}
+
+void LevelEditor::DrawPlayerSpawn()
+{
+	if (!level->hasPlayerSpawn)
+	{
+		return;
+	}
+
+	// Convert world position to screen position
+	float screenX = (level->playerSpawnPoint.x - cameraX) * cameraZoom;
+	float screenY = (level->playerSpawnPoint.y - cameraY) * cameraZoom;
+
+	if (playerSpawnIcon)
+	{
+		// Draw icon matching player size
+		SDL_FRect destRect;
+		destRect.w = 12 * cameraZoom;
+		destRect.h = 24 * cameraZoom;
+		destRect.x = screenX - destRect.w / 2;
+		destRect.y = screenY - destRect.h / 2;
+
+		SDL_RenderTexture(renderer, playerSpawnIcon, nullptr, &destRect);
+	}
+	else
+	{
+		// Fallback Draw a yellow rectangle
+		SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
+
+		SDL_FRect playerRect;
+		playerRect.w = 12 * cameraZoom;
+		playerRect.h = 24 * cameraZoom;
+		playerRect.x = screenX - playerRect.w / 2;
+		playerRect.y = screenY - playerRect.h / 2;
+
+		SDL_RenderRect(renderer, &playerRect);
+
+		// Draw cross in center for exact position
+		SDL_RenderLine(renderer, screenX - 5, screenY, screenX + 5, screenY);
+		SDL_RenderLine(renderer, screenX, screenY - 5, screenX, screenY + 5);
+	}
+
 }
 
 
@@ -511,4 +614,24 @@ void LevelEditor::RenderWithCamera()
 
 		}
 	}
+}
+
+void LevelEditor::StartPlayMode()
+{
+	if (!level->hasPlayerSpawn)
+	{
+		SDL_Log("Cannot play: No player spawn point set!");
+		return;
+	}
+
+	isPlaying = true;
+	currentMode = MODE_PLAY;
+	SDL_Log("Entering play mode");
+}
+
+void LevelEditor::StopPlayMode()
+{
+	isPlaying = false;
+	currentMode = MODE_TILES;
+	SDL_Log("Exiting play mode");
 }
