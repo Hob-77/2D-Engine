@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
 	*/
 
-	// imgui testing
+	// ImGui testing
 	ImGui::CreateContext();
 	ImGui::StyleColorsDark();
 	ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
@@ -80,7 +80,6 @@ int main(int argc, char* argv[])
 
 		// Prevent spiral of death
 		frameTime = std::min(frameTime, MAX_FRAME_TIME);
-
 		accumulator += frameTime;
 
 

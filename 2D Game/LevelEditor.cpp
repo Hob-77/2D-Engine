@@ -7,7 +7,7 @@ void LevelEditor::HandleInput(SDL_Event& event)
 	ImGuiIO& io = ImGui::GetIO();
 
 	// Mouse wheel zoom
-	if (event.type == SDL_EVENT_MOUSE_WHEEL)
+	if (event.type == SDL_EVENT_MOUSE_WHEEL && !isPlaying)
 	{
 		float zoomDelta = event.wheel.y * 0.1f;
 		float mouseX, mouseY;
@@ -512,6 +512,11 @@ void LevelEditor::ResetZoom()
 	cameraZoom = DEFAULT_ZOOM;
 }
 
+float LevelEditor::GetPlayModeZoom() const
+{
+	return windowWidth / 640.0f;
+}
+
 void LevelEditor::ScreenToWorld(float screenX, float screenY, float& worldX, float& worldY)
 {
 	worldX = (screenX / cameraZoom) + cameraX;
@@ -527,46 +532,69 @@ void LevelEditor::UpdateCamera(float deltaTime)
 		return;
 	}
 
-	const bool* keys = SDL_GetKeyboardState(NULL);
-	float moveSpeed = 300.0f * deltaTime / cameraZoom; // Movement scaled with zoom
+	if (!isPlaying)
+	{
+		const bool* keys = SDL_GetKeyboardState(NULL);
+		float moveSpeed = 300.0f * deltaTime / cameraZoom; // Movement scaled with zoom
 
-	// Keyboard movement (wasd)
-	if (keys[SDL_SCANCODE_W]) 
-	{
-		cameraY -= moveSpeed;
-	}
-	if (keys[SDL_SCANCODE_S])
-	{
-		cameraY += moveSpeed;
-	}
-	if (keys[SDL_SCANCODE_A])
-	{
-		cameraX -= moveSpeed;
-	}
-	if (keys[SDL_SCANCODE_D])
-	{
-		cameraX += moveSpeed;
-	}
+		// Keyboard movement (wasd) only in edit mode
+		if (keys[SDL_SCANCODE_W])
+		{
+			cameraY -= moveSpeed;
+		}
+		if (keys[SDL_SCANCODE_S])
+		{
+			cameraY += moveSpeed;
+		}
+		if (keys[SDL_SCANCODE_A])
+		{
+			cameraX -= moveSpeed;
+		}
+		if (keys[SDL_SCANCODE_D])
+		{
+			cameraX += moveSpeed;
+		}
 
-	// Edge scrolling
-	float mouseX, mouseY;
-	SDL_GetMouseState(&mouseX, &mouseY);
+		// Edge scrolling only in edit mode
+		float mouseX, mouseY;
+		SDL_GetMouseState(&mouseX, &mouseY);
 
-	if (mouseX < EDGE_SCROLL_MARGIN)
-	{
-		cameraX -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		if (mouseX < EDGE_SCROLL_MARGIN)
+		{
+			cameraX -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		}
+		if (mouseX > windowWidth - EDGE_SCROLL_MARGIN)
+		{
+			cameraX += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		}
+		if (mouseY < EDGE_SCROLL_MARGIN)
+		{
+			cameraY -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		}
+		if (mouseY > windowHeight - EDGE_SCROLL_MARGIN)
+		{
+			cameraY += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		}
 	}
-	if (mouseX > windowWidth - EDGE_SCROLL_MARGIN)
+	else
 	{
-		cameraX += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
-	}
-	if (mouseY < EDGE_SCROLL_MARGIN)
-	{
-		cameraY -= EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
-	}
-	if (mouseY > windowHeight - EDGE_SCROLL_MARGIN)
-	{
-		cameraY += EDGE_SCROLL_SPEED * deltaTime / cameraZoom;
+		// PLAY MODE: Camera follow the player now
+		if (world && playerEntity != NULL_ENTITY)
+		{
+			Transform* playerTransform = world->GetTransform(playerEntity);
+			if (playerTransform)
+			{
+				// Center camera on player
+				Vec2 targetCameraPos;
+				targetCameraPos.x = playerTransform->position.x - (windowWidth / 2.0f / cameraZoom);
+				targetCameraPos.y = playerTransform->position.y - (windowHeight / 2.0f / cameraZoom);
+
+				// Smooth camera following
+				float lerpFactor = 5.0f * deltaTime;
+				cameraX += (targetCameraPos.x - cameraX) * lerpFactor;
+				cameraY += (targetCameraPos.y - cameraY) * lerpFactor;
+			}
+		}
 	}
 
 	// Camera bounds (25 tiles beyond level edges
@@ -687,6 +715,8 @@ void LevelEditor::StartPlayMode()
 	currentMode = MODE_PLAY;
 	SDL_Log("Entering play mode");
 
+	cameraZoom = GetPlayModeZoom();
+
 	// Create the ECS world
 	world = new World();
 
@@ -756,6 +786,8 @@ void LevelEditor::StopPlayMode()
 	isPlaying = false;
 	currentMode = MODE_TILES;
 	SDL_Log("Exiting play mode");
+
+	cameraZoom = DEFAULT_ZOOM;
 
 	// Clean up systems
 	if (physicsSystem)

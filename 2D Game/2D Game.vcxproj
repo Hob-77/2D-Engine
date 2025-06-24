@@ -177,6 +177,7 @@
     <Image Include="Assets\brick_floor.png" />
     <Image Include="Assets\dirt_floor.png" />
     <Image Include="Assets\grass_floor.png" />
+    <Image Include="Assets\player.png" />
     <Image Include="Assets\spike_down.png" />
     <Image Include="Assets\spike_left.png" />
     <Image Include="Assets\spike_right.png" />

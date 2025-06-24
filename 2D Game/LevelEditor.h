@@ -25,9 +25,11 @@ private:
 	Uint64 lastFrameTime;
 	float deltaTime;
 
-	// Movement for screen and zoom
+	// Movement for screen
 	static constexpr float EDGE_SCROLL_MARGIN = 50.0f;
 	static constexpr float EDGE_SCROLL_SPEED = 400.0f;
+
+	// Zoom
 	static constexpr float MIN_ZOOM = 0.25f;
 	static constexpr float DEFAULT_ZOOM = 1.0f;
 	static constexpr float MAX_ZOOM = 4.0f;
@@ -118,6 +120,7 @@ public:
 	// Camera functions
 	void RecenterCamera();
 	void ResetZoom();
+	float GetPlayModeZoom() const;
 	void ScreenToWorld(float screenX, float screenY, float& worldX, float& worldY);
 	void RenderWithCamera();
 	void UpdateCamera(float deltaTime);
