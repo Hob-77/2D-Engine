@@ -371,6 +371,41 @@ void LevelEditor::DrawPlayerSpawn()
 
 }
 
+void LevelEditor::DrawPlayer()
+{
+	if (!world || playerEntity == NULL_ENTITY)
+	{
+		return;
+	}
+
+	Transform* transform = world->GetTransform(playerEntity);
+	Sprite* sprite = world->GetSprite(playerEntity);
+
+	if (transform && sprite && sprite->texture)
+	{
+		SDL_FRect destRect;
+		destRect.w = sprite->width * cameraZoom;
+		destRect.h = sprite->height * cameraZoom;
+		destRect.x = (transform->position.x - cameraX) * cameraZoom - destRect.w / 2;
+		destRect.y = (transform->position.y - cameraY) * cameraZoom - destRect.h / 2;
+
+		SDL_RenderTexture(renderer, sprite->texture, nullptr, &destRect);
+	}
+	else if (transform)
+	{
+		// Fallback: Draw green rectangele
+		SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+
+		SDL_FRect playerRect;
+		playerRect.w = 12 * cameraZoom;
+		playerRect.h = 24 * cameraZoom;
+		playerRect.x = (transform->position.x - cameraX) * cameraZoom - playerRect.w / 2;
+		playerRect.y = (transform->position.y - cameraY) * cameraZoom - playerRect.h / 2;
+
+		SDL_RenderRect(renderer, &playerRect);
+	}
+}
+
 
 void LevelEditor::PlaceTilePreview(int x, int y)
 {
@@ -627,6 +662,69 @@ void LevelEditor::StartPlayMode()
 	isPlaying = true;
 	currentMode = MODE_PLAY;
 	SDL_Log("Entering play mode");
+
+	// Create the ECS world
+	world = new World();
+
+	// Create player entity
+	playerEntity = world->CreateEntity();
+
+	// Add transform
+	world->AddTransform(playerEntity, Transform{
+		level->playerSpawnPoint,
+		0.0f,
+		1.0f
+		});
+
+	// Add physics
+	world->AddPhysics(playerEntity, Physics{
+		Vec2(0,0),   // Velocity
+		Vec2(0,0),   // Acceleration
+		1.0f,        // gravityScale
+		600.0f,      // maxFallSpeed
+		0.0f,        // linearDamping
+		false        // isKinematic
+		});
+
+	// Add collider
+	world->AddCollider(playerEntity, Collider{
+		Vec2(12.0f, 24.0f),   // Size
+		Vec2(0.0f, 0.0f),     // Offset
+		LAYER_PLAYER,         // Layer
+		0xFFFF,               // Collides with everything
+		false,                // isTrigger
+		false                 // isStatic
+		});
+
+	// Add collision state
+	world->AddCollisionState(playerEntity, CollisionState{});
+
+	// Add player component
+	world->AddPlayer(playerEntity, Player{});
+
+	// Load and add sprite
+	SDL_Texture* playerTexture = IMG_LoadTexture(renderer, "Assets/player.png");
+	if (playerTexture)
+	{
+		world->AddSprite(playerEntity, Sprite{
+			playerTexture,
+			SDL_Color{255,255,255,255},
+			12,      // Width
+			24       // Height
+			});
+	}
+	else
+	{
+		SDL_Log("Warning: No player texture found at Assets/player.png");
+	}
+
+	SDL_Log("Player entity created at (%.0f, %.0f)",
+		level->playerSpawnPoint.x,
+		level->playerSpawnPoint.y);
+
+	// Initialize systems
+	physicsSystem = new PhysicsSystem(600.0f);
+	playerControllerSystem = new PlayerControllerSystem();
 }
 
 void LevelEditor::StopPlayMode()
@@ -634,4 +732,12 @@ void LevelEditor::StopPlayMode()
 	isPlaying = false;
 	currentMode = MODE_TILES;
 	SDL_Log("Exiting play mode");
+
+	if (world)
+	{
+		delete world;
+		world = nullptr;
+	}
+
+	playerEntity = NULL_ENTITY;
 }

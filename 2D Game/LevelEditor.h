@@ -51,10 +51,10 @@ private:
 
 	// Game systems
 	class PhysicsSystem* physicsSystem = nullptr;
-	class PlayerControllerSystem* PlayerControllerSystem = nullptr;
+	class PlayerControllerSystem* playerControllerSystem = nullptr;
 
 	// Player entity
-	Entity* playerEntity = nullptr;
+	Entity playerEntity = NULL_ENTITY;
 
 	// Tile placing state (default)
 	EditorMode currentMode = MODE_TILES;
@@ -106,6 +106,7 @@ public:
 	void DrawGrid();
 	void DrawLevelBoundary();
 	void DrawPlayerSpawn();
+	void DrawPlayer();
 	void PlaceTile(int x, int y);
 	void PlaceTilePreview(int x, int y);
 	void SaveLevel();
