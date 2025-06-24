@@ -8,19 +8,78 @@ public:
 	Datatype* m_array;
 	int m_size;
 
-	Array(int p_size)
+	Array(int p_size) : m_array(nullptr), m_size(0)
 	{
-		m_array = new Datatype[p_size];
-		m_size = p_size;
+		if (p_size > 0)
+		{
+			m_array = new Datatype[p_size];
+			m_size = p_size;
+		}
+	}
+
+	// Copy constructor - CRITICAL!
+	Array(const Array& other) : m_array(nullptr), m_size(0)
+	{
+		if (other.m_size > 0)
+		{
+			m_array = new Datatype[other.m_size];
+			m_size = other.m_size;
+			for (int i = 0; i < m_size; i++)
+			{
+				m_array[i] = other.m_array[i];
+			}
+		}
+	}
+
+	// Move constructor
+	Array(Array&& other) noexcept : m_array(other.m_array), m_size(other.m_size)
+	{
+		other.m_array = nullptr;
+		other.m_size = 0;
+	}
+
+	// Copy assignment operator
+	Array& operator=(const Array& other)
+	{
+		if (this != &other)
+		{
+			// Delete old data
+			delete[] m_array;
+			m_array = nullptr;
+			m_size = 0;
+
+			// Copy new data
+			if (other.m_size > 0)
+			{
+				m_array = new Datatype[other.m_size];
+				m_size = other.m_size;
+				for (int i = 0; i < m_size; i++)
+				{
+					m_array[i] = other.m_array[i];
+				}
+			}
+		}
+		return *this;
+	}
+
+	// Move assignment operator
+	Array& operator=(Array&& other) noexcept
+	{
+		if (this != &other)
+		{
+			delete[] m_array;
+			m_array = other.m_array;
+			m_size = other.m_size;
+			other.m_array = nullptr;
+			other.m_size = 0;
+		}
+		return *this;
 	}
 
 	~Array()
 	{
-		if (m_array != 0)
-		{
-			delete[] m_array;
-		}
-		m_array = 0;
+		delete[] m_array;
+		m_array = nullptr;
 	}
 
 	int Size()
@@ -30,32 +89,26 @@ public:
 
 	void Resize(int p_size)
 	{
-		Datatype* newarray = new Datatype[p_size];
-		if (newarray == 0)
+		Datatype* newarray = nullptr;
+
+		if (p_size > 0)
 		{
-			return;
+			newarray = new Datatype[p_size];
+			if (newarray == nullptr)
+			{
+				return;
+			}
+
+			int min = (p_size < m_size) ? p_size : m_size;
+			for (int index = 0; index < min; index++)
+			{
+				newarray[index] = m_array[index];
+			}
 		}
 
-		int min;
-		if (p_size < m_size)
-		{
-			min = p_size;
-		}
-		else
-		{
-			min = m_size;
-		}
-		int index;
-		for (index = 0; index < min; index++)
-		{
-			newarray[index] = m_array[index];
-		}
-		m_size = p_size;
-		if (m_array != 0)
-		{
-			delete[] m_array;
-		}
+		delete[] m_array;
 		m_array = newarray;
+		m_size = p_size;
 	}
 
 	const Datatype& operator[] (int p_index) const
@@ -75,8 +128,7 @@ public:
 
 	void Insert(Datatype p_item, int p_index)
 	{
-		int index;
-		for (index = m_size - 1; index > p_index; index--)
+		for (int index = m_size - 1; index > p_index; index--)
 		{
 			m_array[index] = m_array[index - 1];
 		}
@@ -85,8 +137,7 @@ public:
 
 	void Remove(int p_index)
 	{
-		int index;
-		for (index = p_index + 1; index < m_size; index++)
+		for (int index = p_index + 1; index < m_size; index++)
 		{
 			m_array[index - 1] = m_array[index];
 		}

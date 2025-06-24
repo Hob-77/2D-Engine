@@ -133,8 +133,8 @@ private:
 		}
 
 		// Swap arrays
-		dense = newDense;
-		data = newData;
+		dense = std::move(newDense);
+		data = std::move(newData);
 		capacity = newCapacity;
 	}
 

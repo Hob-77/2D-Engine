@@ -2,7 +2,6 @@
 
 #include "Level.h"
 #include "LevelEditor.h"
-#include "Array.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include "imgui/imgui.h"
@@ -32,7 +31,7 @@ int main(int argc, char* argv[])
 
 	if (!window)
 	{
-		std::cout << "Window could not be created! SDL_ERROR: " << SDL_GetError() << "\n";
+		std::cerr << "Window could not be created! SDL_ERROR: " << SDL_GetError() << "\n";
 		SDL_Quit();
 		return -1;
 	}
@@ -40,7 +39,7 @@ int main(int argc, char* argv[])
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, nullptr);
 	if (!renderer)
 	{
-		std::cout << "Renderer could not be created! SDL_ERROR: " << SDL_GetError() << "\n";
+		std::cerr << "Renderer could not be created! SDL_ERROR: " << SDL_GetError() << "\n";
 		SDL_DestroyWindow(window);
 		SDL_Quit();
 		return -1;
@@ -57,6 +56,7 @@ int main(int argc, char* argv[])
 	ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer3_Init(renderer);
 
+	Level::InitializeTileProperties();
 
 	// Make level for testing
 	LevelEditor editor(renderer, windowWidth, windowHeight);
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 		while (accumulator >= FIXED_TIMESTEP)
 		{
 
-
+			editor.UpdateWorld(FIXED_TIMESTEP);
 
 			accumulator -= FIXED_TIMESTEP;
 		}
@@ -144,5 +144,4 @@ int main(int argc, char* argv[])
 	SDL_Quit();
 
 	return 0;
-
 }

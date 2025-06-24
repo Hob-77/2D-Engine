@@ -123,4 +123,7 @@ public:
 	void UpdateCamera(float deltaTime);
 	void Update();
 
+	// Editor World
+	void UpdateWorld(float dt);
+
 };

@@ -260,6 +260,11 @@ void LevelEditor::Draw()
 
 	DrawPlayerSpawn();
 
+	if (isPlaying)
+	{
+		DrawPlayer();
+	}
+
 	if (currentTileX >= 0 && currentTileX < level->MAPWIDTH && currentTileY >= 0 && currentTileY < level->MAPHEIGHT)
 	{
 		PlaceTilePreview(currentTileX, currentTileY);
@@ -611,6 +616,25 @@ void LevelEditor::Update()
 	UpdateCamera(deltaTime);
 }
 
+void LevelEditor::UpdateWorld(float dt)
+{
+	if (!isPlaying || !world)
+	{
+		return;
+	}
+
+	// Update player controller first (handles input)
+	if (playerControllerSystem)
+	{
+		playerControllerSystem->Update(*world, dt);
+	}
+
+	if (physicsSystem)
+	{
+		physicsSystem->Update(*world, *level, dt);
+	}
+}
+
 void LevelEditor::RenderWithCamera()
 {
 	// Visible tile range with 1 tile buffer for smooth scrolling
@@ -732,6 +756,19 @@ void LevelEditor::StopPlayMode()
 	isPlaying = false;
 	currentMode = MODE_TILES;
 	SDL_Log("Exiting play mode");
+
+	// Clean up systems
+	if (physicsSystem)
+	{
+		delete physicsSystem;
+		physicsSystem = nullptr;
+	}
+
+	if (playerControllerSystem)
+	{
+		delete playerControllerSystem;
+		playerControllerSystem = nullptr;
+	}
 
 	if (world)
 	{

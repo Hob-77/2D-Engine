@@ -22,7 +22,7 @@ struct Player {
 	float jumpBufferTimer = 0.0f;
 };
 
-class PlayerController {
+class PlayerControllerSystem {
 public:
     void Update(World& world, float dt) {
         world.Query<Player, Transform, Physics, CollisionState>(
