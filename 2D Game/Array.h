@@ -4,7 +4,7 @@
 #include <utility>  // for std::move
 #include <new>      // for std::nothrow
 #include <algorithm> // for std::min/max
-#include <SDL3/SDL.h> // for SDL_Log, SDL_assert, SDL_clamp, SDL_IOStream
+#include <SDL3/SDL.h>
 
 template<class Datatype>
 class Array

@@ -787,7 +787,8 @@ void LevelEditor::StopPlayMode()
 	currentMode = MODE_TILES;
 	SDL_Log("Exiting play mode");
 
-	cameraZoom = DEFAULT_ZOOM;
+	ResetZoom();
+	RecenterCamera();
 
 	// Clean up systems
 	if (physicsSystem)
