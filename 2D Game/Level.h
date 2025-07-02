@@ -29,7 +29,7 @@ private:
 public:
 	// Level constraints
 	static constexpr uint8_t TILE_SIZE = 16;
-	// One screen size on modern displays
+	// One screen size on 1920 x 1080
 	static constexpr uint16_t MIN_WIDTH = 40;
 	static constexpr uint16_t MIN_HEIGHT = 23;
 	// Huge level maximum size
@@ -62,6 +62,85 @@ public:
 		TILE_BRICK_FLOOR = 7,
 	};
 
+	// Creates level
+	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
+	{
+
+		// Sets the pointers to nullptr
+		for (int i = 0; i < 256; i++)
+		{
+			tileTextures[i] = nullptr;
+		}
+
+		// Tiles are now empty
+		Tiles.Clear(TILE_AIR);
+
+		playerSpawnPoint = Vec2(
+			(width * TILE_SIZE) / 2.0f,
+			(height * TILE_SIZE) / 2.0f
+		);
+		hasPlayerSpawn = true;
+	}
+
+	~Level()
+	{
+		// Clean up loaded textures
+		for (int i = 0; i < 256; i++)
+		{
+			if (tileTextures[i] != nullptr)
+			{
+				SDL_DestroyTexture(tileTextures[i]);
+				tileTextures[i] = nullptr;
+			}
+		}
+	}
+
+	Level(const Level&) = delete;
+	Level& operator=(const Level&) = delete;
+
+	Level(Level&& other) noexcept :
+		MAPWIDTH(other.MAPWIDTH),
+		MAPHEIGHT(other.MAPHEIGHT),
+		Tiles(std::move(other.Tiles)),
+		tileTextures(std::move(other.tileTextures)),
+		playerSpawnPoint(other.playerSpawnPoint),
+		hasPlayerSpawn(other.hasPlayerSpawn)
+	{
+		// clear the moved-from object
+		other.MAPWIDTH = 0;
+		other.MAPHEIGHT = 0;
+		other.hasPlayerSpawn = false;
+	}
+
+	Level& operator=(Level&& other) noexcept
+	{
+		if (this != &other)
+		{
+			// Clean up current textures first
+			for (int i = 0; i < 256; i++)
+			{
+				if (tileTextures[i] != nullptr)
+				{
+					SDL_DestroyTexture(tileTextures[i]);
+				}
+			}
+
+			// Move data
+			MAPWIDTH = other.MAPWIDTH;
+			MAPHEIGHT = other.MAPHEIGHT;
+			Tiles = std::move(other.Tiles);
+			tileTextures = std::move(other.tileTextures);
+			playerSpawnPoint = other.playerSpawnPoint;
+			hasPlayerSpawn = other.hasPlayerSpawn;
+
+			// Clear moved-from object
+			other.MAPWIDTH = 0;
+			other.MAPHEIGHT = 0;
+			other.hasPlayerSpawn = false;
+		}
+		return *this;
+	}
+
 	// Getter: Needed for ImGui
 	SDL_Texture* GetTileTexture(uint8_t tileType)
 	{
@@ -73,19 +152,24 @@ public:
 	{
 		SDL_Surface* surface = IMG_Load(path);
 
-		if (!surface) 
+		if (!surface)
 		{
 			SDL_Log("Failed to load %s: %s", path, SDL_GetError());
 			return;
 		}
 
+		if (tileTextures[type] != nullptr)
+		{
+			SDL_DestroyTexture(tileTextures[type]);
+		}
+
 		tileTextures[type] = SDL_CreateTextureFromSurface(renderer, surface);
 
-		if (!tileTextures[type]) 
+		if (!tileTextures[type])
 		{
 			SDL_Log("Failed to create texture from %s: %s", path, SDL_GetError());
 		}
-		else 
+		else
 		{
 			// Crispy pixels
 			SDL_SetTextureScaleMode(tileTextures[type], SDL_SCALEMODE_NEAREST);
@@ -132,26 +216,6 @@ public:
 
 			}
 		}
-	}
-
-	// Creates level
-	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
-	{
-
-		// Sets the pointers to nullptr
-		for (int i = 0; i < 256; i++)
-		{
-			tileTextures[i] = nullptr;
-		}
-
-		// Tiles are now empty
-		Tiles.Clear(TILE_AIR);
-
-		playerSpawnPoint = Vec2(
-			(width * TILE_SIZE) / 2.0f,
-			(height * TILE_SIZE) / 2.0f
-		);
-		hasPlayerSpawn = true;
 	}
 
 	bool SaveToFile(const char* filename)

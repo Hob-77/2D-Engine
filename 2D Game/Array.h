@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdio>
-#include <cstring>  // for memcpy
-#include <utility>  // for std::move
-#include <new>      // for std::nothrow
-#include <algorithm> // for std::min/max
+#include <cstring>
+#include <utility>
+#include <new>
+#include <algorithm>
 #include <SDL3/SDL.h>
 
 template<class Datatype>
@@ -12,7 +12,7 @@ class Array
 private:
     Datatype* m_array;
     int m_size;
-    int m_capacity;  // Add capacity for better resize performance
+    int m_capacity;
 
 public:
     // Constructor
@@ -464,40 +464,55 @@ public:
     int Height() const { return m_height; }
     int Size() const { return m_width * m_height; }
 
-    // Safe element access with bounds checking
+    // FIXED: Safe element access with PROPER bounds checking
     Datatype& Get(int p_x, int p_y)
     {
-#ifdef _DEBUG
+        // Handle empty array case
+        if (m_array == nullptr || m_width == 0 || m_height == 0)
+        {
+            SDL_Log("Array2D::Get - Accessing empty array!");
+            SDL_assert(false);
+            static Datatype dummy{};
+            return dummy;
+        }
+
+        // ALWAYS check bounds - fail fast in both debug and release
         if (p_x < 0 || p_x >= m_width || p_y < 0 || p_y >= m_height)
         {
             SDL_Log("Array2D::Get - Out of bounds access: (%d,%d) in %dx%d array", p_x, p_y, m_width, m_height);
-            // In debug, we'll assert. In release, we'll clamp.
             SDL_assert(false);
-        }
-#endif
 
-        // Clamp to valid range in release
-        p_x = SDL_clamp(p_x, 0, m_width - 1);
-        p_y = SDL_clamp(p_y, 0, m_height - 1);
+            // In release, we still need to return something to avoid undefined behavior
+            static Datatype dummy{};
+            return dummy;
+        }
 
         return m_array[p_y * m_width + p_x];
     }
 
     const Datatype& Get(int p_x, int p_y) const
     {
-#ifdef _DEBUG
+        // Handle empty array case
+        if (m_array == nullptr || m_width == 0 || m_height == 0)
+        {
+            SDL_Log("Array2D::Get - Accessing empty array!");
+            SDL_assert(false);
+            static const Datatype dummy{};
+            return dummy;
+        }
+
+        // ALWAYS check bounds - fail fast in both debug and release
         if (p_x < 0 || p_x >= m_width || p_y < 0 || p_y >= m_height)
         {
             SDL_Log("Array2D::Get - Out of bounds access: (%d,%d) in %dx%d array", p_x, p_y, m_width, m_height);
             SDL_assert(false);
+
+            // In release, we still need to return something to avoid undefined behavior
+            static const Datatype dummy{};
+            return dummy;
         }
-#endif
 
-        // Cast away const to use SDL_clamp (it's safe since we're just reading)
-        int x = SDL_clamp(p_x, 0, m_width - 1);
-        int y = SDL_clamp(p_y, 0, m_height - 1);
-
-        return m_array[y * m_width + x];
+        return m_array[p_y * m_width + p_x];
     }
 
     // Check if coordinates are valid
@@ -616,8 +631,28 @@ public:
         delete[] m_array;
     }
 
+    // FIXED: Add bounds checking to Get()
     Datatype& Get(int p_x, int p_y, int p_z)
     {
+        // Handle empty array
+        if (m_array == nullptr || m_width == 0 || m_height == 0 || m_depth == 0)
+        {
+            SDL_Log("Array3D::Get - Accessing empty array!");
+            SDL_assert(false);
+            static Datatype dummy{};
+            return dummy;
+        }
+
+        // Bounds checking
+        if (p_x < 0 || p_x >= m_width || p_y < 0 || p_y >= m_height || p_z < 0 || p_z >= m_depth)
+        {
+            SDL_Log("Array3D::Get - Out of bounds: (%d,%d,%d) in %dx%dx%d array",
+                p_x, p_y, p_z, m_width, m_height, m_depth);
+            SDL_assert(false);
+            static Datatype dummy{};
+            return dummy;
+        }
+
         return m_array[(p_z * m_width * m_height) + (p_y * m_width) + p_x];
     }
 
