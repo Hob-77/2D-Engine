@@ -1,5 +1,6 @@
 #pragma once
-#include "Array.h"
+#include <vector>
+#include <algorithm>
 #include "AABB.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
@@ -26,6 +27,11 @@ public:
 
 private:
 	static TileProperties tileProperties[256];
+
+	// Helper to convert 2D to 1D index
+	inline size_t getTileIndex(int x, int y) const {
+		return y * MAPWIDTH + x;
+	}
 public:
 	// Level constraints
 	static constexpr uint8_t TILE_SIZE = 16;
@@ -38,8 +44,8 @@ public:
 
 	// Actual Level 
 	uint16_t MAPWIDTH, MAPHEIGHT;
-	Array2D<uint8_t> Tiles;
-	Array<SDL_Texture*> tileTextures;
+	std::vector<uint8_t> tiles;
+	std::vector<SDL_Texture*> tileTextures;
 
 	// Player spawn point
 	Vec2 playerSpawnPoint;
@@ -63,18 +69,8 @@ public:
 	};
 
 	// Creates level
-	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),Tiles(width, height), tileTextures(256)
+	Level(uint16_t width, uint16_t height) : MAPWIDTH(width),MAPHEIGHT(height),tiles(width * height, TILE_AIR), tileTextures(256, nullptr)
 	{
-
-		// Sets the pointers to nullptr
-		for (int i = 0; i < 256; i++)
-		{
-			tileTextures[i] = nullptr;
-		}
-
-		// Tiles are now empty
-		Tiles.Clear(TILE_AIR);
-
 		playerSpawnPoint = Vec2(
 			(width * TILE_SIZE) / 2.0f,
 			(height * TILE_SIZE) / 2.0f
@@ -85,12 +81,12 @@ public:
 	~Level()
 	{
 		// Clean up loaded textures
-		for (int i = 0; i < 256; i++)
+		for (auto& texture : tileTextures)
 		{
-			if (tileTextures[i] != nullptr)
+			if (texture != nullptr)
 			{
-				SDL_DestroyTexture(tileTextures[i]);
-				tileTextures[i] = nullptr;
+				SDL_DestroyTexture(texture);
+				texture = nullptr;
 			}
 		}
 	}
@@ -98,47 +94,54 @@ public:
 	Level(const Level&) = delete;
 	Level& operator=(const Level&) = delete;
 
-	Level(Level&& other) noexcept :
-		MAPWIDTH(other.MAPWIDTH),
-		MAPHEIGHT(other.MAPHEIGHT),
-		Tiles(std::move(other.Tiles)),
-		tileTextures(std::move(other.tileTextures)),
-		playerSpawnPoint(other.playerSpawnPoint),
-		hasPlayerSpawn(other.hasPlayerSpawn)
+	Level(Level&& other) noexcept = default;
+	Level& operator=(Level&& other) noexcept = default;
+
+	// Tile access methods (replacing Array2D.Get())
+	uint8_t GetTile(int x, int y) const
 	{
-		// clear the moved-from object
-		other.MAPWIDTH = 0;
-		other.MAPHEIGHT = 0;
-		other.hasPlayerSpawn = false;
+		if (x < 0 || x >= MAPWIDTH || y < 0 || y >= MAPHEIGHT)
+		{
+			return TILE_AIR;  // Return air for out of bounds
+		}
+		return tiles[getTileIndex(x, y)];
 	}
 
-	Level& operator=(Level&& other) noexcept
+	void SetTile(int x, int y, uint8_t tileType)
 	{
-		if (this != &other)
+		if (x >= 0 && x < MAPWIDTH && y >= 0 && y < MAPHEIGHT)
 		{
-			// Clean up current textures first
-			for (int i = 0; i < 256; i++)
-			{
-				if (tileTextures[i] != nullptr)
-				{
-					SDL_DestroyTexture(tileTextures[i]);
-				}
-			}
-
-			// Move data
-			MAPWIDTH = other.MAPWIDTH;
-			MAPHEIGHT = other.MAPHEIGHT;
-			Tiles = std::move(other.Tiles);
-			tileTextures = std::move(other.tileTextures);
-			playerSpawnPoint = other.playerSpawnPoint;
-			hasPlayerSpawn = other.hasPlayerSpawn;
-
-			// Clear moved-from object
-			other.MAPWIDTH = 0;
-			other.MAPHEIGHT = 0;
-			other.hasPlayerSpawn = false;
+			tiles[getTileIndex(x, y)] = tileType;
 		}
-		return *this;
+	}
+
+	void ClearTiles(uint8_t tileType = TILE_AIR)
+	{
+		std::fill(tiles.begin(), tiles.end(), tileType);
+	}
+
+	// Resize level
+	void Resize(uint16_t newWidth, uint16_t newHeight)
+	{
+		// Create new tile array
+		std::vector<uint8_t> newTiles(newWidth * newHeight, TILE_AIR);
+
+		// Copy old tiles that fit
+		int minWidth = std::min(MAPWIDTH, newWidth);
+		int minHeight = std::min(MAPHEIGHT, newHeight);
+
+		for (int y = 0; y < minHeight; y++)
+		{
+			for (int x = 0; x < minWidth; x++)
+			{
+				newTiles[y * newWidth + x] = tiles[getTileIndex(x, y)];
+			}
+		}
+
+		// Update dimensions and swap arrays
+		MAPWIDTH = newWidth;
+		MAPHEIGHT = newHeight;
+		tiles = std::move(newTiles);
 	}
 
 	// Getter: Needed for ImGui
@@ -198,7 +201,7 @@ public:
 			for (int x = 0; x < MAPWIDTH; x++)
 			{
 
-				uint8_t tileType = Tiles.Get(x, y);
+				uint8_t tileType = GetTile(x, y);
 
 				// skip air tiles
 				if (tileType == TILE_AIR || tileTextures[tileType] == nullptr)
@@ -234,7 +237,7 @@ public:
 		{
 			for (int x = 0; x < MAPWIDTH; x++)
 			{
-				SDL_WriteU8(file, Tiles.Get(x, y));
+				SDL_WriteU8(file, GetTile(x, y));
 			}
 		}
 
@@ -293,9 +296,7 @@ public:
 
 		if (width != MAPWIDTH || height != MAPHEIGHT)
 		{
-			MAPWIDTH = width;
-			MAPHEIGHT = height;
-			Tiles = Array2D<uint8_t>(width, height);
+			Resize(width, height);
 		}
 
 		for (int y = 0; y < MAPHEIGHT; y++)
@@ -310,7 +311,8 @@ public:
 					SDL_CloseIO(file);
 					return false;
 				}
-				Tiles.Get(x, y) = tile;
+
+				SetTile(x, y, tile);
 			}
 		}
 
@@ -362,7 +364,7 @@ public:
 		{
 			for (int x = startX; x <= endX; x++)
 			{
-				uint8_t tileType = Tiles.Get(x, y);
+				uint8_t tileType = GetTile(x, y);
 				const TileProperties& props = GetTileProperties(tileType);
 
 				if (props.isSolid)

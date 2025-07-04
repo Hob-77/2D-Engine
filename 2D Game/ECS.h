@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "Array.h"
+#include <vector>
 #include "Vec2.h"
 #include "AABB.h"
 #include <SDL3/SDL.h>
@@ -57,9 +57,9 @@ struct Physics {
 enum CollisionLayers : uint16_t
 {
 	LAYER_DEFAULT = 1 << 0,
-	LAYER_PLAYER  = 1 << 1,
-	LAYER_ENEMY   = 1 << 2,
-	LAYER_PLATFORM= 1 << 3,
+	LAYER_PLAYER = 1 << 1,
+	LAYER_ENEMY = 1 << 2,
+	LAYER_PLATFORM = 1 << 3,
 	LAYER_TRIGGER = 1 << 4,
 };
 
@@ -111,41 +111,27 @@ class SparseSet
 private:
 	static const uint32_t INVALID_INDEX = MAX_ENTITIES + 1;
 
-	Array<uint32_t> sparse; // entity -> dense index
-	Array<Entity> dense;
-	Array<T> data;
+	std::vector<uint32_t> sparse; // entity -> dense index
+	std::vector<Entity> dense;
+	std::vector<T> data;
 	int count = 0;
-	int capacity = 0;
 
 	void Grow()
 	{
-		int newCapacity = capacity == 0 ? 64 : capacity * 2;
+		size_t newCapacity = dense.capacity() == 0 ? 64 : dense.capacity() * 2;
 
-		// Create new arrays
-		Array<Entity> newDense(newCapacity);
-		Array<T> newData(newCapacity);
-
-		// Copy existing data
-		for (int i = 0; i < count; i++)
-		{
-			newDense[i] = dense[i];
-			newData[i] = data[i];
-		}
-
-		// Swap arrays
-		dense = std::move(newDense);
-		data = std::move(newData);
-		capacity = newCapacity;
+		// Reserve space in vectors
+		dense.reserve(newCapacity);
+		data.reserve(newCapacity);
 	}
 
 public:
-	SparseSet() : sparse(MAX_ENTITIES), dense(0), data(0), count(0), capacity(0)
+	SparseSet() : sparse(MAX_ENTITIES, INVALID_INDEX), count(0)
 	{
-		// Initialize sparse array to invalid indices
-		for (int i = 0; i < MAX_ENTITIES; i++)
-		{
-			sparse[i] = INVALID_INDEX;
-		}
+		// sparse vector is already initialized with INVALID_INDEX values
+		// Reserve initial capacity for dense and data vectors
+		dense.reserve(64);
+		data.reserve(64);
 	}
 
 	void Add(Entity entity, const T& component)
@@ -163,13 +149,21 @@ public:
 		}
 
 		// Grow if needed
-		if (count >= capacity)
+		if (count >= static_cast<int>(dense.capacity()))
 		{
 			Grow();
 		}
 
 		// Add new component
 		sparse[entity] = count;
+
+		// Ensure vectors have enough space
+		if (count >= static_cast<int>(dense.size()))
+		{
+			dense.resize(count + 1);
+			data.resize(count + 1);
+		}
+
 		dense[count] = entity;
 		data[count] = component;
 		count++;
@@ -217,7 +211,7 @@ public:
 			return false;
 		}
 		uint32_t index = sparse[entity];
-		return index < count && dense[index] == entity;
+		return index < static_cast<uint32_t>(count) && dense[index] == entity;
 	}
 
 	int Count() const

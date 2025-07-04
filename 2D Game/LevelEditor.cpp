@@ -443,7 +443,7 @@ void LevelEditor::PlaceTile(int x, int y)
 	// Check bounds
 	if (x >= 0 && x < level->MAPWIDTH && y >= 0 && y < level->MAPHEIGHT)
 	{
-		level->Tiles.Get(x, y) = selectedTile;
+		level->SetTile(x, y, selectedTile);
 	}
 }
 
@@ -484,10 +484,10 @@ void LevelEditor::CreateNewLevel(int width, int height)
 		level->MAPHEIGHT = height;
 
 		// Resize the current level (We dont have to reload textures this way)
-		level->Tiles.Resize(width, height);
+		level->Resize(width, height);
 
 		// Clear all tiles to Air = 0
-		level->Tiles.Clear(Level::TILE_AIR);
+		level->ClearTiles(Level::TILE_AIR);
 
 		SDL_Log("Created new level: %dx%d", width, height);
 	}
@@ -683,7 +683,7 @@ void LevelEditor::RenderWithCamera()
 		for (int x = startX; x < endX; x++)
 		{
 
-			uint8_t tileType = level->Tiles.Get(x, y);
+			uint8_t tileType = level->GetTile(x, y);
 
 			if (tileType == Level::TILE_AIR || level->tileTextures[tileType] == nullptr)
 			{
