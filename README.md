@@ -52,6 +52,3 @@ A custom 2D platformer engine built from scratch in C++ featuring a full level e
 - SDL3_image
 - ImGui
 - C++17
-
-## Art
-- I made in Asperite!
