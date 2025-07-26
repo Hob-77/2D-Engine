@@ -1,5 +1,5 @@
 # 2D Platformer Engine
-A custom 2D platformer engine built from scratch in C++ featuring a full level editor, ECS architecture, and physics system.
+A custom 2D platformer engine built from scratch in C++ featuring a full level editor, ECS architecture, and physics system. Currently I opted for STL Vector and Hashtable as I want to work on features in this project and not as much DSA.
 
 ## Features
 
