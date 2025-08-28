@@ -1,6 +1,6 @@
 ## 2D Game Engine
 
-Custom game engine systems built from scratch in C++ with integrated level editor. Using SDL3 for windowing, input handeling, and rendering.
+Custom game engine systems built from scratch in C++ with imGui for integrated level editor. Using SDL3 for windowing, input handeling, and rendering.
 
 ### Technical Features
 - **Entity Component System (ECS)**
