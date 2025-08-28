@@ -37,13 +37,13 @@ Custom game engine systems built from scratch in C++ with integrated level edito
 - Efficient spatial queries for collision detection
 - Minimal draw calls through batching
 
-  ### In Development
+### In Development
 - Animation system
 - Enemy AI
 - Particle systems
 - Texture Manager
 
-  ### Bonus
+### Bonus
 - All art made in Asperite by me
 
 ### Build Requirements
