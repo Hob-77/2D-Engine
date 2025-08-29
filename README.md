@@ -2,7 +2,7 @@
 
 Custom game engine systems built from scratch in C++ with imGui for integrated level editor. Using SDL3 for windowing, input handeling, and rendering.
 
-https://github.com/user-attachments/assets/71e67d92-0e2e-45b3-878a-f5ed3694c75c
+https://www.youtube.com/watch?v=iY-0GqAhtyY
 
 ### Technical Features
 - **Entity Component System (ECS)**
