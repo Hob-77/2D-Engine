@@ -1,5 +1,8 @@
 #include "LevelEditor.h"
 #include "imgui/imgui.h"
+#include <chrono>
+
+extern FILE* g_performanceFile;
 
 // Level Editor imgui input
 void LevelEditor::HandleInput(SDL_Event& event)
@@ -651,15 +654,30 @@ void LevelEditor::UpdateWorld(float dt)
 		return;
 	}
 
-	// Update player controller first (handles input)
+	// Time the player controller system
+	auto start = std::chrono::high_resolution_clock::now();
 	if (playerControllerSystem)
 	{
 		playerControllerSystem->Update(*world, dt);
 	}
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	if (g_performanceFile) {
+		fprintf(g_performanceFile, "PLAYER_CONTROLLER,%ld\n", duration.count());
+		fflush(g_performanceFile);
+	}
 
+	// Time the physics system
+	start = std::chrono::high_resolution_clock::now();
 	if (physicsSystem)
 	{
 		physicsSystem->Update(*world, *level, dt);
+	}
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+	if (g_performanceFile) {
+		fprintf(g_performanceFile, "PHYSICS_SYSTEM,%ld\n", duration.count());
+		fflush(g_performanceFile);
 	}
 }
 

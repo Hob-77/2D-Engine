@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include "Level.h"
 #include "LevelEditor.h"
@@ -11,9 +12,11 @@
 int windowWidth = 1920;
 int windowHeight = 1080;
 
+// Global performance file handle
+FILE* g_performanceFile = nullptr;
+
 int main(int argc, char* argv[])
 {
-
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
 	{
 		std::cerr << "Failed to init SDL: " << SDL_GetError() << "\n";
@@ -45,10 +48,11 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// Need to comment out for imgui, DO NOT FORGET TO UNDO THIS AFTER ALL THE LEVEL EDITOR STUFF!!!!!
-	/*
-	SDL_SetRenderLogicalPresentation(renderer, 640, 360, SDL_LOGICAL_PRESENTATION_INTEGER_SCALE);
-	*/
+	// Open global performance file
+	fopen_s(&g_performanceFile, "performance_data.csv", "w");
+	if (!g_performanceFile) {
+		std::cerr << "Failed to create performance_data.csv\n";
+	}
 
 	// ImGui testing
 	ImGui::CreateContext();
@@ -71,8 +75,20 @@ int main(int argc, char* argv[])
 	bool quit = false;
 	SDL_Event event;
 
+	// Frame timing
+	auto frameStart = std::chrono::high_resolution_clock::now();
+
 	while (!quit)
 	{
+		// Time total frame
+		auto frameEnd = std::chrono::high_resolution_clock::now();
+		auto frameDuration = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd - frameStart);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "TOTAL_FRAME,%ld\n", frameDuration.count());
+			fflush(g_performanceFile);
+		}
+		frameStart = frameEnd;
+
 		// Timing
 		float newTime = SDL_GetTicks() / 1000.0f;
 		float frameTime = newTime - currentTime;
@@ -82,7 +98,8 @@ int main(int argc, char* argv[])
 		frameTime = std::min(frameTime, MAX_FRAME_TIME);
 		accumulator += frameTime;
 
-
+		// Time input handling
+		auto start = std::chrono::high_resolution_clock::now();
 		while (SDL_PollEvent(&event))
 		{
 			ImGui_ImplSDL3_ProcessEvent(&event);
@@ -95,43 +112,78 @@ int main(int argc, char* argv[])
 
 			if (event.type == SDL_EVENT_KEY_DOWN)
 			{
-				// Escape to quit
 				if (event.key.key == SDLK_ESCAPE)
 				{
 					quit = true;
 				}
 			}
 		}
-
-		while (accumulator >= FIXED_TIMESTEP)
-		{
-
-			editor.UpdateWorld(FIXED_TIMESTEP);
-
-			accumulator -= FIXED_TIMESTEP;
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "INPUT_HANDLING,%ld\n", duration.count());
+			fflush(g_performanceFile);
 		}
 
-		// Update for movement of screen in editor
-		editor.Update();
+		// Time physics updates
+		start = std::chrono::high_resolution_clock::now();
+		while (accumulator >= FIXED_TIMESTEP)
+		{
+			editor.UpdateWorld(FIXED_TIMESTEP);
+			accumulator -= FIXED_TIMESTEP;
+		}
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "FIXED_UPDATE,%ld\n", duration.count());
+			fflush(g_performanceFile);
+		}
 
+		// Time editor update (camera movement)
+		start = std::chrono::high_resolution_clock::now();
+		editor.Update();
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "EDITOR_UPDATE,%ld\n", duration.count());
+			fflush(g_performanceFile);
+		}
+
+		// Time ImGui preparation
+		start = std::chrono::high_resolution_clock::now();
 		ImGui_ImplSDLRenderer3_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
-
 		editor.DrawUI();
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "IMGUI_UPDATE,%ld\n", duration.count());
+			fflush(g_performanceFile);
+		}
 
+		// Time rendering
+		start = std::chrono::high_resolution_clock::now();
 		SDL_SetRenderDrawColor(renderer, 100, 149, 237, 255);
 		SDL_RenderClear(renderer);
 
 		editor.RenderWithCamera();
-
-		// Grid and Tile preview
 		editor.Draw();
 
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-
 		SDL_RenderPresent(renderer);
+		end = std::chrono::high_resolution_clock::now();
+		duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+		if (g_performanceFile) {
+			fprintf(g_performanceFile, "RENDER,%ld\n", duration.count());
+			fflush(g_performanceFile);
+		}
+	}
+
+	// Close performance file
+	if (g_performanceFile) {
+		fclose(g_performanceFile);
 	}
 
 	ImGui_ImplSDLRenderer3_Shutdown();
